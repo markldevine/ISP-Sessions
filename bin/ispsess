@@ -1,7 +1,6 @@
 #!/usr/bin/env raku
 
 use ISP::dsmadmc;
-use Terminal::ANSIColor;
 use Prettier::Table;
 
 use Data::Dump::Tree;
