@@ -117,7 +117,7 @@ sub MAIN (
         my Str      $failover-mode;                                         #               Failover Mode: No
 
         $table = Prettier::Table.new:
-            title => 'IBM Spectrum Protect: ' ~ $isp-server ~ ' Sessions [' ~ DateTime(now).hh-mm-ss ~ ']',
+            title => 'IBM Spectrum Protect: ' ~ $isp-server ~ ' Sessions [' ~ DateTime(now).local.hh-mm-ss ~ ']',
             field-names => @field-names,
             align       => %align,
         ;
