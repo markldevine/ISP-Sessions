@@ -16,7 +16,7 @@ class ISP-Sessions-statistics {
 
     method to-bytes (Str:D $num-unit) {
         if $num-unit ~~ / ^ (\d.+?) \s* (\w*) $ / {
-            my $real    = $0.Str;
+            my $real    = $0.Str.comb.grep(/\d/).join;
             my $unit    = $1.Str with $1;
             given $unit {
                 when 'K'    { return $real * K }
@@ -42,7 +42,7 @@ class ISP-Sessions-statistics {
 
     method bytes-sent (:$bytes-sent) {
         return $!bytes-sent         without $bytes-sent;
-        my $real-bytes-sent         = self.to-bytes($bytes-sent.comb.grep(/\d/).join.Str).Rat;
+        my $real-bytes-sent         = self.to-bytes($bytes-sent).Rat;
         $!last-bytes-sent           = $real-bytes-sent unless $!last-bytes-sent >= 0.0;
         $!bytes-sent-delta          = $real-bytes-sent - $!last-bytes-sent;
         $!bytes-sent                = $real-bytes-sent;
