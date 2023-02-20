@@ -42,7 +42,6 @@ class ISP-Sessions-statistics {
 
     method bytes-sent (:$bytes-sent) {
         return $!bytes-sent         without $bytes-sent;
-put '$bytes-sent = <' ~ $bytes-sent ~ '>';
         my $real-bytes-sent         = self.to-bytes($bytes-sent.comb.grep(/\d/).join.Str).Rat;
         $!last-bytes-sent           = $real-bytes-sent unless $!last-bytes-sent >= 0.0;
         $!bytes-sent-delta          = $real-bytes-sent - $!last-bytes-sent;
