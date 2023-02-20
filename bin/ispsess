@@ -2,6 +2,67 @@
 
 use ISP::Server::Reporter;
 
+class ISP-Sessions-statistics {
+
+    constant \K     = 1024;
+    constant \M     = K * 1024;
+    constant \G     = M * 1024;
+    constant \T     = G * 1024;
+    constant \P     = T * 1024;
+
+    has Rat $!bytes-sent            = 0.0;
+    has Rat $.bytes-sent-delta      = 0.0;
+    has Rat $!last-bytes-sent       = -1.0;
+
+    method to-bytes (Str:D $num-unit) {
+        if $num-unit ~~ / ^ (\d.+?) \s* (\w*) $ / {
+            my $real    = $0.Str;
+            my $unit    = $1.Str with $1;
+            given $unit {
+                when 'K'    { return $real * K }
+                when 'M'    { return $real * M }
+                when 'G'    { return $real * G }
+                when 'T'    { return $real * T }
+                when 'P'    { return $real * P }
+                default     { return $real;    }
+            }
+        }
+    }
+
+    method bytes-to-unit (Real:D $real) {
+        given $real {
+            when $_ >= P    { return ($real / P).fmt("%.1f P"); }
+            when $_ >= T    { return ($real / T).fmt("%.1f T"); }
+            when $_ >= G    { return ($real / G).fmt("%.1f G"); }
+            when $_ >= M    { return ($real / M).fmt("%.1f M"); }
+            when $_ >= K    { return ($real / K).fmt("%.1f K"); }
+            default         { return $real;                     }
+        }
+    }
+
+    method bytes-sent (:$bytes-sent) {
+        return $!bytes-sent         without $bytes-sent;
+        my $real-bytes-sent         = self.to-bytes($bytes-sent).Rat;
+        $!last-bytes-sent           = $real-bytes-sent unless $!last-bytes-sent >= 0.0;
+        $!bytes-sent-delta          = $real-bytes-sent - $!last-bytes-sent;
+        $!bytes-sent                = $real-bytes-sent;
+        $!last-bytes-sent           = $real-bytes-sent;
+    }
+
+    has Rat $!bytes-received        = 0.0;
+    has Rat $.bytes-received-delta  = 0.0;
+    has Rat $!last-bytes-received   = -1.0;
+
+    method bytes-received (:$bytes-received) {
+        return $!bytes-received     without $bytes-received;
+        my $real-bytes-received     = self.to-bytes($bytes-received).Rat;
+        $!last-bytes-received       = $real-bytes-received unless $!last-bytes-received >= 0.0;
+        $!bytes-received-delta      = $real-bytes-received - $!last-bytes-received;
+        $!bytes-received            = $real-bytes-received;
+        $!last-bytes-received       = $real-bytes-received;
+    }
+}
+
 my regex date-time-regex    {
                                 ^
                                 $<month>        = (\d\d)
@@ -19,6 +80,8 @@ my regex date-time-regex    {
                             }
 
 class Reporter does ISP::Server::Reporter {
+
+    has %!statistics;
 
     has $.detailed;
     has $.client-name;
@@ -70,13 +133,18 @@ class Reporter does ISP::Server::Reporter {
             $proxy-by-storage-agent         = Nil;  $proxy-by-storage-agent = $session{'Proxy By Storage Agent'}.Str    if $session{'Proxy By Storage Agent'};
             $actions                        = Nil;  $actions                = $session{'Actions'}.Str                   if $session{'Actions'};
             $failover-mode                  = Nil;  $failover-mode          = $session{'Failover Mode'}.Str             if $session{'Failover Mode'};
+            %!statistics{$session-number}   = ISP-Sessions-statistics.new   unless %!statistics{$session-number}:exists;
+            %!statistics{$session-number}.bytes-sent(:$bytes-sent);
+            %!statistics{$session-number}.bytes-received(:$bytes-received);
             $row                            = Array.new;
             $row.push:                      $session-number;
             $row.push:                      $communication-method;
             $row.push:                      $session-state;
             $row.push:                      $wait-time;
-            $row.push:                      $bytes-sent;
-            $row.push:                      $bytes-received;
+            $row.push:                      %!statistics{$session-number}.bytes-to-unit(%!statistics{$session-number}.bytes-sent);
+            $row.push:                      %!statistics{$session-number}.bytes-to-unit(%!statistics{$session-number}.bytes-sent-delta);
+            $row.push:                      %!statistics{$session-number}.bytes-to-unit(%!statistics{$session-number}.bytes-received);
+            $row.push:                      %!statistics{$session-number}.bytes-to-unit(%!statistics{$session-number}.bytes-received-delta);
             $row.push:                      $session-type;
             $row.push:                      $platform;
             $row.push:                      $client-name;
@@ -109,7 +177,9 @@ sub MAIN (
     @fields.push:   ISP::Server::Reporter::Field.new(:name('Sess State'),                   :alignment('c'));
     @fields.push:   ISP::Server::Reporter::Field.new(:name('Wait Time'),                    :alignment('r'));
     @fields.push:   ISP::Server::Reporter::Field.new(:name('Bytes Sent'),                   :alignment('r'));
+    @fields.push:   ISP::Server::Reporter::Field.new(:name('Bytes Sent Δ'),               :alignment('r'));
     @fields.push:   ISP::Server::Reporter::Field.new(:name('Bytes Recvd'),                  :alignment('r'));
+    @fields.push:   ISP::Server::Reporter::Field.new(:name('Bytes Recvd Δ'),              :alignment('r'));
     @fields.push:   ISP::Server::Reporter::Field.new(:name('Sess Type'),                    :alignment('c'));
     @fields.push:   ISP::Server::Reporter::Field.new(:name('Platform'),                     :alignment('c'));
     @fields.push:   ISP::Server::Reporter::Field.new(:name('Client Name'),                  :alignment('l'));
