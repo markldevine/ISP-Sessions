@@ -131,6 +131,7 @@ sub MAIN (
                                     :@fields,
                                     :$detailed,
                                     :$client-name,
+                                    :sort-by('Client Name'),
                                   );
     $reporter.loop;
 }
