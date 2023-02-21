@@ -15,8 +15,8 @@ class ISP-Sessions-statistics {
     has Rat $!last-bytes-sent       = -1.0;
 
     method to-bytes (Str:D $num-unit) {
-        if $num-unit ~~ / ^ (\d.+?) \s* (\w*) $ / {
-            my $real    = $0.Str.comb.grep(/\d/).join;
+        if $num-unit ~~ / ^ (\d+ '.'* \d*) \s* (\w*) $ / {
+            my $real    = $0.Str.comb.grep(/ \d | '.' /).join;
             my $unit    = $1.Str with $1;
             given $unit {
                 when 'K'    { return $real * K }
