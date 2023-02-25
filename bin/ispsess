@@ -76,6 +76,8 @@ my regex date-time-regex    {
                                 $<minute>       = (\d\d)
                                 ':'
                                 $<second>       = (\d\d)
+                                '.'
+                                \d ** 6
                                 $
                             }
 
@@ -87,41 +89,38 @@ class Reporter does ISP::Server::Reporter {
     has $.client-name;
 
     method process-rows (@sessions) {
-        my Str      $session-number;                                        ##                Sess Number: 29,057
-        my Str      $communication-method;                                  ##               Comm. Method: SSL
-        my Str      $session-state;                                         ##                 Sess State: RecvW
-        my Str      $wait-time;                                             ##                  Wait Time: 0 S
-        my Str      $bytes-sent;                                            ##                 Bytes Sent: 18.8 K
-        my Str      $bytes-received;                                        ##                Bytes Recvd: 11.1 G
-        my Str      $session-type;                                          ##                  Sess Type: Node
-        my Str      $platform;                                              ##                   Platform: Linux x86-64
-        my Str      $client-name;                                           ##                Client Name: SAMPLE_NODE
-        my Str      $media-access-status;                                   #         Media Access Status: 
-        my Str      $user-name;                                             #                   User Name:
-        my DateTime $date-time-first-data-sent;                             #   Date/Time First Data Sent: 02/03/23   10:52:07
-        my Str      $proxy-by-storage-agent;                                #      Proxy By Storage Agent:
-        my Str      $actions;                                               #                     Actions: BkIns FSUpd
-        my Str      $failover-mode;                                         #               Failover Mode: No
+        my Str      $SESSION_ID;                            # 872694
+        my DateTime $START_TIME;                            # 2023-02-25 15:05:15.000000
+        my Str      $COMMMETHOD;                            # SSL
+        my Str      $STATE;                                 # RecvW
+        my Str      $WAIT_SECONDS;                          # 0
+        my Str      $BYTES_SENT;                            # 1277
+        my Str      $BYTES_RECEIVED;                        # 1123077711
+        my Str      $SESSION_TYPE;                          # Node
+        my Str      $CLIENT_PLATFORM;                       # TDP Oracle AIX
+        my Str      $CLIENT_NAME;                           # CADBBUSDR10-NBUSPRD1-TDP
+        my Str      $OWNER_NAME;                            #
+        my Str      $MOUNT_POINT_WAIT;                      #
+        my Str      $INPUT_MOUNT_WAIT;                      #
+        my Str      $INPUT_VOL_WAIT;                        #
+        my Str      $INPUT_VOL_ACCESS;                      #
+        my Str      $OUTPUT_MOUNT_WAIT;                     #
+        my Str      $OUTPUT_VOL_WAIT;                       #
+        my Str      $OUTPUT_VOL_ACCESS;                     # PRMANDRSTG,/tsmstg11/00050042.BFS,142
+        my Str      $LAST_VERB;                             # ConfirmResp
+        my Str      $VERB_STATE;                            # Sent
+        my Str      $FAIL_OVER_MODE;                        # No
 
         my $row;
         for @sessions -> $session {
-            $client-name                    = Nil;  $client-name            = $session{'Client Name'}.Str               if $session{'Client Name'};
+            $CLIENT_NAME        = Nil;  $CLIENT_NAME        = $session{'CLIENT_NAME'}.Str       if $session{'CLIENT_NAME'};
             if self.client-name {
-                next unless self.client-name.fc eq $client-name.fc;
+                next unless self.client-name.fc eq $CLIENT_NAME.fc;
             }
-            $session-number                 = Nil;  $session-number         = $session{'Sess Number'}.Str               if $session{'Sess Number'};
-            $communication-method           = Nil;  $communication-method   = $session{'Comm. Method'}.Str              if $session{'Comm. Method'};
-            $session-state                  = Nil;  $session-state          = $session{'Sess State'}.Str                if $session{'Sess State'};
-            $wait-time                      = Nil;  $wait-time              = $session{'Wait Time'}.Str                 if $session{'Wait Time'};
-            $bytes-sent                     = Nil;  $bytes-sent             = $session{'Bytes Sent'}.Str                if $session{'Bytes Sent'};
-            $bytes-received                 = Nil;  $bytes-received         = $session{'Bytes Recvd'}.Str               if $session{'Bytes Recvd'};
-            $session-type                   = Nil;  $session-type           = $session{'Sess Type'}.Str                 if $session{'Sess Type'};
-            $platform                       = Nil;  $platform               = $session{'Platform'}.Str                  if $session{'Platform'};
-            $media-access-status            = Nil;  $media-access-status    = $session{'Media Access Status'}.Str       if $session{'Media Access Status'};
-            $user-name                      = Nil;  $user-name              = $session{'User Name'}.Str                 if $session{'User Name'};
-            $date-time-first-data-sent      = Nil;
-            if $session{'Date/Time First Data Sent'} && $session{'Date/Time First Data Sent'} ~~ /<date-time-regex>/ {
-                $date-time-first-data-sent  = DateTime.new(
+            $SESSION_ID         = Nil;  $SESSION_ID         = $session{'SESSION_ID'}.Str        if $session{'SESSION_ID'};
+            $START-TIME         = Nil;
+            if $session{'START_TIME'} && $session{'START_TIME'} ~~ /<date-time-regex>/ {
+                $START_TIME                 = DateTime.new(
                                                             :month($<date-time-regex><month>),
                                                             :day($<date-time-regex><day-of-month>),
                                                             :year($<date-time-regex><year> < 100 ?? +$<date-time-regex><year> + 2000 !! +$<date-time-regex><year>),
@@ -130,39 +129,60 @@ class Reporter does ISP::Server::Reporter {
                                                             :second($<date-time-regex><second>),
                                                           );
             }
-            $proxy-by-storage-agent         = Nil;  $proxy-by-storage-agent = $session{'Proxy By Storage Agent'}.Str    if $session{'Proxy By Storage Agent'};
-            $actions                        = Nil;  $actions                = $session{'Actions'}.Str                   if $session{'Actions'};
-            $failover-mode                  = Nil;  $failover-mode          = $session{'Failover Mode'}.Str             if $session{'Failover Mode'};
-            %!statistics{$session-number}   = ISP-Sessions-statistics.new   unless %!statistics{$session-number}:exists;
-            %!statistics{$session-number}.bytes-sent(:$bytes-sent);
-            %!statistics{$session-number}.bytes-received(:$bytes-received);
-            $row                            = Array.new;
-            $row.push:                      $session-number;
-            $row.push:                      $communication-method;
-            $row.push:                      $session-state;
-            $row.push:                      $wait-time;
-            $row.push:                      %!statistics{$session-number}.bytes-to-unit(%!statistics{$session-number}.bytes-sent);
-            $row.push:                      %!statistics{$session-number}.bytes-to-unit(%!statistics{$session-number}.bytes-sent-delta);
-            $row.push:                      %!statistics{$session-number}.bytes-to-unit(%!statistics{$session-number}.bytes-received);
-            $row.push:                      %!statistics{$session-number}.bytes-to-unit(%!statistics{$session-number}.bytes-received-delta);
-            $row.push:                      $session-type;
-            $row.push:                      $platform;
-            $row.push:                      $client-name;
-            $row.push:                      $media-access-status            if self.detailed;
-            $row.push:                      $user-name                      if self.detailed;
+            $COMMMETHOD         = Nil;  $COMMMETHOD         = $session{'COMMMETHOD'}.Str        if $session{'COMMMETHOD'};
+            $STATE              = Nil;  $STATE              = $session{'STATE'}.Str             if $session{'STATE'};
+            $WAIT_SECONDS       = Nil;  $WAIT_SECONDS       = $session{'WAIT_SECONDS'}.Str      if $session{'WAIT_SECONDS'};
+            $BYTES_SENT         = Nil;  $BYTES_SENT         = $session{'BYTES_SENT'}.Str        if $session{'BYTES_SENT'};
+            $BYTES_RECEIVED     = Nil;  $BYTES_RECEIVED     = $session{'BYTES_RECEIVED'}.Str    if $session{'BYTES_RECEIVED'};
+            $SESSION_TYPE       = Nil;  $SESSION_TYPE       = $session{'SESSION_TYPE'}.Str      if $session{'SESSION_TYPE'};
+            $CLIENT_PLATFORM    = Nil;  $CLIENT_PLATFORM    = $session{'CLIENT_PLATFORM'}.Str   if $session{'CLIENT_PLATFORM'};
+            $OWNER_NAME         = Nil;  $OWNER_NAME         = $session{'OWNER_NAME'}.Str        if $session{'OWNER_NAME'};
+            $MOUNT_POINT_WAIT   = Nil;  $MOUNT_POINT_WAIT   = $session{'MOUNT_POINT_WAIT'}.Str  if $session{'MOUNT_POINT_WAIT'};
+            $INPUT_MOUNT_WAIT   = Nil;  $INPUT_MOUNT_WAIT   = $session{'INPUT_MOUNT_WAIT'}.Str  if $session{'INPUT_MOUNT_WAIT'};
+            $INPUT_VOL_WAIT     = Nil;  $INPUT_VOL_WAIT     = $session{'INPUT_VOL_WAIT'}.Str    if $session{'INPUT_VOL_WAIT'};
+            $INPUT_VOL_ACCESS   = Nil;  $INPUT_VOL_ACCESS   = $session{'INPUT_VOL_ACCESS'}.Str  if $session{'INPUT_VOL_ACCESS'};
+            $OUTPUT_MOUNT_WAIT  = Nil;  $OUTPUT_MOUNT_WAIT  = $session{'OUTPUT_MOUNT_WAIT'}.Str if $session{'OUTPUT_MOUNT_WAIT'};
+            $OUTPUT_VOL_WAIT    = Nil;  $OUTPUT_VOL_WAIT    = $session{'OUTPUT_VOL_WAIT'}.Str   if $session{'OUTPUT_VOL_WAIT'};
+            $OUTPUT_VOL_ACCESS  = Nil;  $OUTPUT_VOL_ACCESS  = $session{'OUTPUT_VOL_ACCESS'}.Str if $session{'OUTPUT_VOL_ACCESS'};
+            $LAST_VERB          = Nil;  $LAST_VERB          = $session{'LAST_VERB'}.Str         if $session{'LAST_VERB'};
+            $VERB_STATE         = Nil;  $VERB_STATE         = $session{'VERB_STATE'}.Str        if $session{'VERB_STATE'};
+            $FAIL_OVER_MODE     = Nil;  $FAIL_OVER_MODE     = $session{'FAIL_OVER_MODE'}.Str    if $session{'FAIL_OVER_MODE'};
+
+            %!statistics{$SESSION_ID}                       = ISP-Sessions-statistics.new   unless %!statistics{$SESSION_ID}:exists;
+            %!statistics{$SESSION_ID}.wait-seconds(:$WAIT_SECONDS);
+            %!statistics{$SESSION_ID}.bytes-sent(:$BYTES_SENT);
+            %!statistics{$SESSION_ID}.bytes-received(:$BYTES_RECEIVED);
+
+            $row                = Array.new;
+            $row.push:          $session-number;
+            $row.push:          $communication-method;
+            $row.push:          $session-state;
+            $row.push:          $wait-time;
+            $row.push:          %!statistics{$session-number}.bytes-to-unit(%!statistics{$session-number}.bytes-sent);
+            $row.push:          %!statistics{$session-number}.bytes-to-unit(%!statistics{$session-number}.bytes-sent-delta);
+            $row.push:          %!statistics{$session-number}.bytes-to-unit(%!statistics{$session-number}.bytes-received);
+            $row.push:          %!statistics{$session-number}.bytes-to-unit(%!statistics{$session-number}.bytes-received-delta);
+            $row.push:          $session-type;
+            $row.push:          $platform;
+            $row.push:          $client-name;
+            $row.push:          $media-access-status            if self.detailed;
+            $row.push:          $user-name                      if self.detailed;
             if self.detailed && $date-time-first-data-sent {
-                $row.push:                  $date-time-first-data-sent.Str;
+                $row.push:      $date-time-first-data-sent.Str;
             }
             else {
-                $row.push:                  ' ';
+                $row.push:      ' ';
             }
-            $row.push:                      $proxy-by-storage-agent         if self.detailed;
-            $row.push:                      $actions                        if self.detailed;
-            $row.push:                      $failover-mode                  if self.detailed;
-            self.table.add-row:             $row;
+            $row.push:          $proxy-by-storage-agent         if self.detailed;
+            $row.push:          $actions                        if self.detailed;
+            $row.push:          $failover-mode                  if self.detailed;
+            self.table.add-row: $row;
         }
     }
 }
+
+#                  Session                          State               Bytes Sent        Bytes Received       Client
+# 126052 {NODE@Linux x86-64@SSL} [03:39:48]     IdleW [00:03:58]       450.0 M [102.4 K]  450.0 M [102.4 K]  DFS2K16-19@FO
 
 sub MAIN (
     Str:D   :$isp-server!,                          #= ISP server name
@@ -174,26 +194,13 @@ sub MAIN (
     Bool    :$detailed,                             #= FORMAT=DETAILED
     Str     :$client-name,                          #= ISP CLIENT/NODE name
 ) {
-    my @command     = ['QUERY', 'SESSION'];
-    @command.push:  'FORMAT=DETAILED'   if $detailed;
+    my @command     = ['SELECT', '*', 'FROM', 'SESSIONS'];
     my @fields;
-    @fields.push:   ISP::Server::Reporter::Field.new(:name('Sess Number'),                  :alignment('r'));
-    @fields.push:   ISP::Server::Reporter::Field.new(:name('Comm. Method'),                 :alignment('c'));
-    @fields.push:   ISP::Server::Reporter::Field.new(:name('Sess State'),                   :alignment('c'));
-    @fields.push:   ISP::Server::Reporter::Field.new(:name('Wait Time'),                    :alignment('r'));
-    @fields.push:   ISP::Server::Reporter::Field.new(:name('Bytes Sent'),                   :alignment('r'));
-    @fields.push:   ISP::Server::Reporter::Field.new(:name('Bytes Sent Δ'),               :alignment('r'));
-    @fields.push:   ISP::Server::Reporter::Field.new(:name('Bytes Recvd'),                  :alignment('r'));
-    @fields.push:   ISP::Server::Reporter::Field.new(:name('Bytes Recvd Δ'),              :alignment('r'));
-    @fields.push:   ISP::Server::Reporter::Field.new(:name('Sess Type'),                    :alignment('c'));
-    @fields.push:   ISP::Server::Reporter::Field.new(:name('Platform'),                     :alignment('c'));
-    @fields.push:   ISP::Server::Reporter::Field.new(:name('Client Name'),                  :alignment('l'));
-    @fields.push:   ISP::Server::Reporter::Field.new(:name('Media Access Status'),          :alignment('c'))    if $detailed;
-    @fields.push:   ISP::Server::Reporter::Field.new(:name('User Name'),                    :alignment('c'))    if $detailed;
-    @fields.push:   ISP::Server::Reporter::Field.new(:name('Date/Time First Data Sent'),    :alignment('c'))    if $detailed;
-    @fields.push:   ISP::Server::Reporter::Field.new(:name('Proxy By Storage Agent'),       :alignment('c'))    if $detailed;
-    @fields.push:   ISP::Server::Reporter::Field.new(:name('Actions'),                      :alignment('c'))    if $detailed;
-    @fields.push:   ISP::Server::Reporter::Field.new(:name('Failover Mode'),                :alignment('c'))    if $detailed;
+    @fields.push:   ISP::Server::Reporter::Field.new(:name('Session'),          :alignment('r'));
+    @fields.push:   ISP::Server::Reporter::Field.new(:name('State'),            :alignment('r'));
+    @fields.push:   ISP::Server::Reporter::Field.new(:name('Bytes Sent'),       :alignment('r'));
+    @fields.push:   ISP::Server::Reporter::Field.new(:name('Bytes Received'),   :alignment('r'));
+    @fields.push:   ISP::Server::Reporter::Field.new(:name('Client'),           :alignment('l'));
     my $reporter    = Reporter.new(
                                     :$isp-server,
                                     :$isp-admin,
@@ -204,9 +211,8 @@ sub MAIN (
                                     :title('IBM Spectrum Protect: ' ~ $isp-server ~ ' Sessions'),
                                     :@command,
                                     :@fields,
-                                    :$detailed,
                                     :$client-name,
-                                    :sort-by('Client Name'),
+                                    :sort-by('Session'),
                                   );
     $reporter.loop;
 }
