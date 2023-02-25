@@ -150,7 +150,12 @@ class Reporter does ISP::Server::Reporter {
             $row.push:                      $client-name;
             $row.push:                      $media-access-status            if self.detailed;
             $row.push:                      $user-name                      if self.detailed;
-            $row.push:                      $date-time-first-data-sent.Str  if self.detailed;
+            if self.detailed && $date-time-first-data-sent {
+                $row.push:                  $date-time-first-data-sent.Str;
+            }
+            else {
+                $row.push:                  ' ';
+            }
             $row.push:                      $proxy-by-storage-agent         if self.detailed;
             $row.push:                      $actions                        if self.detailed;
             $row.push:                      $failover-mode                  if self.detailed;
