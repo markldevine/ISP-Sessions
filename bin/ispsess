@@ -14,12 +14,12 @@ class ISP-Sessions-statistics {
     constant \HOUR      = MINUTE    * 60;
     constant \DAY       = HOUR      * 24;
 
-    method wait-seconds (Int:D $wait-seconds) {
+    method seconds-to-d-hh-mm-ss (Int:D $total-seconds) {
         my $dhms        = 'hh:mm:ss';
         my $days        = 0;
         my $hours       = 0;
         my $minutes     = 0;
-        my $seconds     = $wait-seconds;
+        my $seconds     = $total-seconds;
         my $result;
         if $seconds >= DAY {
             $days       = ($seconds / DAY).Int;
@@ -37,15 +37,12 @@ class ISP-Sessions-statistics {
             $seconds   -= $minutes * MINUTE;
         }
         $result        ~= $seconds.fmt("%02d");
-        put '   Days: ' ~ $days;
-        put '  Hours: ' ~ $hours;
-        put 'Minutes: ' ~ $minutes;
-        put 'Seconds: ' ~ $seconds;
+        return $result;
     }
 
-    has Rat $!bytes-sent            = 0.0;
-    has Rat $.bytes-sent-delta      = 0.0;
-    has Rat $!last-bytes-sent       = -1.0;
+    has Rat $!bytes-sent            = 0;
+    has Rat $.bytes-sent-delta      = 0;
+    has Rat $!last-bytes-sent       = -1;
 
     method to-bytes (Str:D $num-unit) {
         if $num-unit ~~ / ^ (\d+ '.'* \d*) \s* (\w*) $ / {
@@ -62,37 +59,37 @@ class ISP-Sessions-statistics {
         }
     }
 
-    method bytes-to-unit (Real:D $real) {
-        given $real {
-            when $_ >= PETA { return ($real / PETA).fmt("%.1f P"); }
-            when $_ >= TERA { return ($real / TERA).fmt("%.1f T"); }
-            when $_ >= GIGA { return ($real / GIGA).fmt("%.1f G"); }
-            when $_ >= MEGA { return ($real / MEGA).fmt("%.1f M"); }
-            when $_ >= KILO { return ($real / KILO).fmt("%.1f K"); }
-            default         { return $real;                     }
+    method bytes-to-unit (Int:D $bytes) {
+        given $bytes {
+            when $_ >= PETA { return ($bytes / PETA).fmt("%.1f P"); }
+            when $_ >= TERA { return ($bytes / TERA).fmt("%.1f T"); }
+            when $_ >= GIGA { return ($bytes / GIGA).fmt("%.1f G"); }
+            when $_ >= MEGA { return ($bytes / MEGA).fmt("%.1f M"); }
+            when $_ >= KILO { return ($bytes / KILO).fmt("%.1f K"); }
+            default         { return $bytes;                        }
         }
     }
 
-    method bytes-sent (:$bytes-sent) {
+    method bytes-sent (Int :$bytes-sent) {
         return $!bytes-sent         without $bytes-sent;
-        my $real-bytes-sent         = self.to-bytes($bytes-sent).Rat;
-        $!last-bytes-sent           = $real-bytes-sent unless $!last-bytes-sent >= 0.0;
-        $!bytes-sent-delta          = $real-bytes-sent - $!last-bytes-sent;
-        $!bytes-sent                = $real-bytes-sent;
-        $!last-bytes-sent           = $real-bytes-sent;
+        my $actual-bytes-sent       = self.to-bytes($bytes-sent);
+        $!last-bytes-sent           = $actual-bytes-sent unless $!last-bytes-sent >= 0;
+        $!bytes-sent-delta          = $actual-bytes-sent - $!last-bytes-sent;
+        $!bytes-sent                = $actual-bytes-sent;
+        $!last-bytes-sent           = $actual-bytes-sent;
     }
 
-    has Rat $!bytes-received        = 0.0;
-    has Rat $.bytes-received-delta  = 0.0;
-    has Rat $!last-bytes-received   = -1.0;
+    has Rat $!bytes-received        = 0;
+    has Rat $.bytes-received-delta  = 0;
+    has Rat $!last-bytes-received   = -1;
 
-    method bytes-received (:$bytes-received) {
+    method bytes-received (Int :$bytes-received) {
         return $!bytes-received     without $bytes-received;
-        my $real-bytes-received     = self.to-bytes($bytes-received).Rat;
-        $!last-bytes-received       = $real-bytes-received unless $!last-bytes-received >= 0.0;
-        $!bytes-received-delta      = $real-bytes-received - $!last-bytes-received;
-        $!bytes-received            = $real-bytes-received;
-        $!last-bytes-received       = $real-bytes-received;
+        my $actual-bytes-received   = self.to-bytes($bytes-received).Rat;
+        $!last-bytes-received       = $actual-bytes-received unless $!last-bytes-received >= 0;
+        $!bytes-received-delta      = $actual-bytes-received - $!last-bytes-received;
+        $!bytes-received            = $actual-bytes-received;
+        $!last-bytes-received       = $actual-bytes-received;
     }
 }
 
@@ -118,7 +115,6 @@ class Reporter does ISP::Server::Reporter {
 
     has %!statistics;
 
-    has $.detailed;
     has $.client-name;
 
     method process-rows (@sessions) {
@@ -182,33 +178,40 @@ class Reporter does ISP::Server::Reporter {
             $FAIL_OVER_MODE     = Nil;  $FAIL_OVER_MODE     = $session{'FAIL_OVER_MODE'}.Str    if $session{'FAIL_OVER_MODE'};
 
             %!statistics{$SESSION_ID}                       = ISP-Sessions-statistics.new   unless %!statistics{$SESSION_ID}:exists;
-            %!statistics{$SESSION_ID}.wait-seconds(:$WAIT_SECONDS);
             %!statistics{$SESSION_ID}.bytes-sent(:$BYTES_SENT);
             %!statistics{$SESSION_ID}.bytes-received(:$BYTES_RECEIVED);
 
             $row                = Array.new;
-            $row.push:          $session-number;
-            $row.push:          $communication-method;
-            $row.push:          $session-state;
-            $row.push:          $wait-time;
-            $row.push:          %!statistics{$session-number}.bytes-to-unit(%!statistics{$session-number}.bytes-sent);
-            $row.push:          %!statistics{$session-number}.bytes-to-unit(%!statistics{$session-number}.bytes-sent-delta);
-            $row.push:          %!statistics{$session-number}.bytes-to-unit(%!statistics{$session-number}.bytes-received);
-            $row.push:          %!statistics{$session-number}.bytes-to-unit(%!statistics{$session-number}.bytes-received-delta);
-            $row.push:          $session-type;
-            $row.push:          $platform;
-            $row.push:          $client-name;
-            $row.push:          $media-access-status            if self.detailed;
-            $row.push:          $user-name                      if self.detailed;
-            if self.detailed && $date-time-first-data-sent {
-                $row.push:      $date-time-first-data-sent.Str;
-            }
-            else {
-                $row.push:      ' ';
-            }
-            $row.push:          $proxy-by-storage-agent         if self.detailed;
-            $row.push:          $actions                        if self.detailed;
-            $row.push:          $failover-mode                  if self.detailed;
+### Session:        126052 {NODE@Linux x86-64@SSL} [03:39:48]
+            $row.push:              $SESSION_ID 
+                                ~   '{'
+                                ~   $SESSION_TYPE
+                                ~   '@'
+                                ~   $CLIENT_PLATFORM
+                                ~   '@'
+                                ~   COMMMETHOD
+                                ~   '} ['
+                                ~   %!statistics{$SESSION_ID}.seconds-to-d-hh-mm-ss((now - $START_TIME).Int)
+                                ~   ']';
+### State:          IdleW [00:03:58]
+            $row.push:              $STATE
+                                ~   ' ['
+                                ~   %!statistics{$SESSION_ID}.seconds-to-d-hh-mm-ss($WAIT_SECONDS)
+                                ~   ']';
+
+### Bytes Sent:     450.0 M [Δ102.4 K]
+            $row.push:              %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-sent);
+                                ~   "[\x[0394]"
+                                ~   %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-sent-delta)
+                                ~   ']';
+### Bytes Received: 450.0 M [Δ102.4 K]
+            $row.push:              %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-received);
+                                ~   "[\x[0394]"
+                                ~   %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-received-delta)
+                                ~   ']';
+### Client:         DFS2K16-19@FO
+            $row.push:              CLIENT_NAME
+                                ~   $FAIL_OVER_MODE eq 'No' ?? '' !! '@FO';
             self.table.add-row: $row;
         }
     }
@@ -224,7 +227,6 @@ sub MAIN (
     Int:D   :$count                         = 1,    #= Number of refreshes (0 is infinity)
     Bool    :$grid,                                 #= Full table grid
     Bool    :$clear,                                #= Clear the screen with each iteration
-    Bool    :$detailed,                             #= FORMAT=DETAILED
     Str     :$client-name,                          #= ISP CLIENT/NODE name
 ) {
     my @command     = ['SELECT', '*', 'FROM', 'SESSIONS'];
