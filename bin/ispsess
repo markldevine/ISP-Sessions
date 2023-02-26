@@ -4,11 +4,44 @@ use ISP::Server::Reporter;
 
 class ISP-Sessions-statistics {
 
-    constant \K     = 1024;
-    constant \M     = K * 1024;
-    constant \G     = M * 1024;
-    constant \T     = G * 1024;
-    constant \P     = T * 1024;
+    constant \KILO      = 1024;
+    constant \MEGA      = KILO      * 1024;
+    constant \GIGA      = MEGA      * 1024;
+    constant \TERA      = GIGA      * 1024;
+    constant \PETA      = TERA      * 1024;
+
+    constant \MINUTE    = 60;
+    constant \HOUR      = MINUTE    * 60;
+    constant \DAY       = HOUR      * 24;
+
+    method wait-seconds (Int:D $wait-seconds) {
+        my $dhms        = 'hh:mm:ss';
+        my $days        = 0;
+        my $hours       = 0;
+        my $minutes     = 0;
+        my $seconds     = $wait-seconds;
+        my $result;
+        if $seconds >= DAY {
+            $days       = ($seconds / DAY).Int;
+            $result     = $days ~ 'd ';
+            $seconds   -= $days * DAY;
+        }
+        if $seconds >= HOUR {
+            $hours      = ($seconds / HOUR).Int;
+            $result    ~= $hours.fmt("%02d");
+            $seconds   -= $hours * HOUR;
+        }
+        if $seconds >= MINUTE {
+            $minutes    = ($seconds / MINUTE).Int;
+            $result    ~= ':' ~ $minutes.fmt("%02d") ~ ':';
+            $seconds   -= $minutes * MINUTE;
+        }
+        $result        ~= $seconds.fmt("%02d");
+        put '   Days: ' ~ $days;
+        put '  Hours: ' ~ $hours;
+        put 'Minutes: ' ~ $minutes;
+        put 'Seconds: ' ~ $seconds;
+    }
 
     has Rat $!bytes-sent            = 0.0;
     has Rat $.bytes-sent-delta      = 0.0;
@@ -19,23 +52,23 @@ class ISP-Sessions-statistics {
             my $real    = $0.Str.comb.grep(/ \d | '.' /).join;
             my $unit    = $1.Str with $1;
             given $unit {
-                when 'K'    { return $real * K }
-                when 'M'    { return $real * M }
-                when 'G'    { return $real * G }
-                when 'T'    { return $real * T }
-                when 'P'    { return $real * P }
-                default     { return $real;    }
+                when 'K'    { return $real * KILO }
+                when 'M'    { return $real * MEGA }
+                when 'G'    { return $real * GIGA }
+                when 'T'    { return $real * TERA }
+                when 'P'    { return $real * PETA }
+                default     { return $real;       }
             }
         }
     }
 
     method bytes-to-unit (Real:D $real) {
         given $real {
-            when $_ >= P    { return ($real / P).fmt("%.1f P"); }
-            when $_ >= T    { return ($real / T).fmt("%.1f T"); }
-            when $_ >= G    { return ($real / G).fmt("%.1f G"); }
-            when $_ >= M    { return ($real / M).fmt("%.1f M"); }
-            when $_ >= K    { return ($real / K).fmt("%.1f K"); }
+            when $_ >= PETA { return ($real / PETA).fmt("%.1f P"); }
+            when $_ >= TERA { return ($real / TERA).fmt("%.1f T"); }
+            when $_ >= GIGA { return ($real / GIGA).fmt("%.1f G"); }
+            when $_ >= MEGA { return ($real / MEGA).fmt("%.1f M"); }
+            when $_ >= KILO { return ($real / KILO).fmt("%.1f K"); }
             default         { return $real;                     }
         }
     }
