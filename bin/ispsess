@@ -1,5 +1,7 @@
 #!/usr/bin/env raku
 
+constant    \TIME-ZONE  = -5 * 3600;
+
 use ISP::Server::Reporter;
 
 class ISP-Sessions-statistics {
@@ -159,6 +161,7 @@ class Reporter does ISP::Server::Reporter {
                                                             :hour($<date-time-regex><hour>),
                                                             :minute($<date-time-regex><minute>),
                                                             :second($<date-time-regex><second>),
+                                                            :timezone(TIME-ZONE),
                                                           );
             }
             $COMMMETHOD         = Nil;  $COMMMETHOD         = $session{'COMMMETHOD'}.Str        if $session{'COMMMETHOD'};
