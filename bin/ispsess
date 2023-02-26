@@ -76,7 +76,7 @@ class ISP-Sessions-statistics {
             when $_ >= GIGA { return ($bytes / GIGA).fmt("%.1f G"); }
             when $_ >= MEGA { return ($bytes / MEGA).fmt("%.1f M"); }
             when $_ >= KILO { return ($bytes / KILO).fmt("%.1f K"); }
-            default         { return $bytes;                        }
+            default         { return $bytes.fmt("%s B");            }
         }
     }
 
@@ -157,18 +157,7 @@ class Reporter does ISP::Server::Reporter {
                 next unless self.client-name.fc eq $CLIENT_NAME.fc;
             }
             $SESSION_ID         = Nil;  $SESSION_ID         = $session{'SESSION_ID'}.Int        if $session{'SESSION_ID'};
-            $START_TIME         = Nil;
-            if $session{'START_TIME'} && $session{'START_TIME'} ~~ /<date-time-regex>/ {
-                $START_TIME                 = DateTime.new(
-                                                            :month($<date-time-regex><month>),
-                                                            :day($<date-time-regex><day-of-month>),
-                                                            :year($<date-time-regex><year> < 100 ?? +$<date-time-regex><year> + 2000 !! +$<date-time-regex><year>),
-                                                            :hour($<date-time-regex><hour>),
-                                                            :minute($<date-time-regex><minute>),
-                                                            :second($<date-time-regex><second>),
-                                                            :timezone(TIME-ZONE),
-                                                          );
-            }
+            $START_TIME         = Nil;  $START_TIME         = $session{'START_TIME'}.DateTime   if $session{'START_TIME'};
             $COMMMETHOD         = Nil;  $COMMMETHOD         = $session{'COMMMETHOD'}.Str        if $session{'COMMMETHOD'};
             $STATE              = Nil;  $STATE              = $session{'STATE'}.Str             if $session{'STATE'};
             $WAIT_SECONDS       = Nil;  $WAIT_SECONDS       = $session{'WAIT_SECONDS'}.Int      if $session{'WAIT_SECONDS'};
@@ -195,28 +184,38 @@ class Reporter does ISP::Server::Reporter {
             $row.push:          $SESSION_ID;
             my $active          = '';
             if $START_TIME {
-                my $current-dt  = DateTime.new(now);
-                $active         = %!statistics{$SESSION_ID}.seconds-to-d-hh-mm-ss(($current-dt - $START_TIME).Int);
+                my $current-dt  = DateTime.new(now, :timezone(self.seconds-offset-UTC));
+                $active         = %!statistics{$SESSION_ID}.seconds-to-d-hh-mm-ss(($current-dt.local - $START_TIME).Int);
             }
             $row.push:          $active;
             $row.push:          $COMMMETHOD;
             $row.push:          $SESSION_TYPE;
             $row.push:          $CLIENT_PLATFORM;
-            $row.push:          '[' ~ %!statistics{$SESSION_ID}.seconds-to-d-hh-mm-ss($WAIT_SECONDS) ~ '] ' ~ $STATE.fmt("%6s");
-### Bytes Sent:     450.0 M [Δ102.4 K]
-            $row.push:          sprintf("%10s%8s",  "[\x[0394]" ~ %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-sent-delta) ~ ']',
+            if $WAIT_SECONDS {
+                $row.push:      '[' ~ %!statistics{$SESSION_ID}.seconds-to-d-hh-mm-ss($WAIT_SECONDS) ~ '] ' ~ $STATE.fmt("%6s");
+            }
+            else {
+                $row.push:      $STATE;
+            }
+            if %!statistics{$SESSION_ID}.bytes-sent-delta {
+                $row.push:      sprintf("%-11s%8s", '[' ~ "\x[0394] " ~ %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-sent-delta) ~ ']',
                                                     %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-sent),
                                        );
-### Bytes Received: 450.0 M [Δ102.4 K]
-            $row.push:                  %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-received)
-                                    ~   "[\x[0394]"
-                                    ~   %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-received-delta)
-                                    ~   ']';
-### Client:         DFS2K16-19@FO
+            }
+            else {
+                $row.push:      sprintf("%19s", %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-sent));
+            }
+            if %!statistics{$SESSION_ID}.bytes-received-delta {
+                $row.push:      sprintf("%-11s%8s", '[' ~ "\x[0394] " ~ %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-received-delta) ~ ']',
+                                                    %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-received),
+                                       );
+            }
+            else {
+                $row.push:      sprintf("%19s", %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-received));
+            }
             my $record          =       $CLIENT_NAME;
             $record            ~=       '@FO'   if $FAIL_OVER_MODE eq 'Yes';
             $row.push:          $record;
-
             self.table.add-row: $row;
         }
     }
@@ -236,14 +235,14 @@ sub MAIN (
 ) {
     my @command     = ['SELECT', '*', 'FROM', 'SESSIONS'];
     my @fields;
-    @fields.push:   ISP::Server::Reporter::Field.new(:name('Session'),          :alignment('r'));
-    @fields.push:   ISP::Server::Reporter::Field.new(:name('Active ⧗'),      :alignment('r'));
-    @fields.push:   ISP::Server::Reporter::Field.new(:name('Comm'),             :alignment('r'));
-    @fields.push:   ISP::Server::Reporter::Field.new(:name('Type'),             :alignment('r'));
-    @fields.push:   ISP::Server::Reporter::Field.new(:name('Platform'),         :alignment('r'));
+    @fields.push:   ISP::Server::Reporter::Field.new(:name('Session'),          :alignment('c'));
+    @fields.push:   ISP::Server::Reporter::Field.new(:name("Active \x[029D6]"), :alignment('r'));
+    @fields.push:   ISP::Server::Reporter::Field.new(:name('Comm'),             :alignment('c'));
+    @fields.push:   ISP::Server::Reporter::Field.new(:name('Type'),             :alignment('c'));
+    @fields.push:   ISP::Server::Reporter::Field.new(:name('Platform'),         :alignment('c'));
     @fields.push:   ISP::Server::Reporter::Field.new(:name('State'),            :alignment('r'));
-    @fields.push:   ISP::Server::Reporter::Field.new(:name('Bytes Sent'),       :alignment('r'));
-    @fields.push:   ISP::Server::Reporter::Field.new(:name('Bytes Received'),   :alignment('r'));
+    @fields.push:   ISP::Server::Reporter::Field.new(:name('Bytes Sent'),       :alignment('c'));
+    @fields.push:   ISP::Server::Reporter::Field.new(:name('Bytes Received'),   :alignment('c'));
     @fields.push:   ISP::Server::Reporter::Field.new(:name('Client'),           :alignment('l'));
     my $reporter    = Reporter.new(
                                     :$isp-server,
