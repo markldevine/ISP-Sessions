@@ -40,9 +40,9 @@ class ISP-Sessions-statistics {
         return $result;
     }
 
-    has Rat $!bytes-sent            = 0;
-    has Rat $.bytes-sent-delta      = 0;
-    has Rat $!last-bytes-sent       = -1;
+    has Int $!bytes-sent            = 0;
+    has Int $.bytes-sent-delta      = 0;
+    has Int $!last-bytes-sent       = -1;
 
     method to-bytes (Str:D $num-unit) {
         if $num-unit ~~ / ^ (\d+ '.'* \d*) \s* (\w*) $ / {
@@ -57,6 +57,7 @@ class ISP-Sessions-statistics {
                 default     { return $real;       }
             }
         }
+        return $num-unit;
     }
 
     method bytes-to-unit (Int:D $bytes) {
@@ -79,9 +80,9 @@ class ISP-Sessions-statistics {
         $!last-bytes-sent           = $actual-bytes-sent;
     }
 
-    has Rat $!bytes-received        = 0;
-    has Rat $.bytes-received-delta  = 0;
-    has Rat $!last-bytes-received   = -1;
+    has Int $!bytes-received        = 0;
+    has Int $.bytes-received-delta  = 0;
+    has Int $!last-bytes-received   = -1;
 
     method bytes-received (Int :$bytes-received) {
         return $!bytes-received     without $bytes-received;
@@ -93,13 +94,15 @@ class ISP-Sessions-statistics {
     }
 }
 
+#   2023-02-25 20:10:48.000000
+
 my regex date-time-regex    {
                                 ^
+                                $<year>         = (\d\d\d\d)
+                                '-'
                                 $<month>        = (\d\d)
-                                '/'
+                                '-'
                                 $<day-of-month> = (\d\d)
-                                '/'
-                                $<year>         = (\d+)
                                 \s+
                                 $<hour>         = (\d\d)
                                 ':'
@@ -118,13 +121,13 @@ class Reporter does ISP::Server::Reporter {
     has $.client-name;
 
     method process-rows (@sessions) {
-        my Str      $SESSION_ID;                            # 872694
+        my Int      $SESSION_ID;                            # 872694
         my DateTime $START_TIME;                            # 2023-02-25 15:05:15.000000
         my Str      $COMMMETHOD;                            # SSL
         my Str      $STATE;                                 # RecvW
-        my Str      $WAIT_SECONDS;                          # 0
-        my Str      $BYTES_SENT;                            # 1277
-        my Str      $BYTES_RECEIVED;                        # 1123077711
+        my Int      $WAIT_SECONDS;                          # 0
+        my Int      $BYTES_SENT;                            # 1277
+        my Int      $BYTES_RECEIVED;                        # 1123077711
         my Str      $SESSION_TYPE;                          # Node
         my Str      $CLIENT_PLATFORM;                       # TDP Oracle AIX
         my Str      $CLIENT_NAME;                           # CADBBUSDR10-NBUSPRD1-TDP
@@ -146,8 +149,8 @@ class Reporter does ISP::Server::Reporter {
             if self.client-name {
                 next unless self.client-name.fc eq $CLIENT_NAME.fc;
             }
-            $SESSION_ID         = Nil;  $SESSION_ID         = $session{'SESSION_ID'}.Str        if $session{'SESSION_ID'};
-            $START-TIME         = Nil;
+            $SESSION_ID         = Nil;  $SESSION_ID         = $session{'SESSION_ID'}.Int        if $session{'SESSION_ID'};
+            $START_TIME         = Nil;
             if $session{'START_TIME'} && $session{'START_TIME'} ~~ /<date-time-regex>/ {
                 $START_TIME                 = DateTime.new(
                                                             :month($<date-time-regex><month>),
@@ -160,11 +163,12 @@ class Reporter does ISP::Server::Reporter {
             }
             $COMMMETHOD         = Nil;  $COMMMETHOD         = $session{'COMMMETHOD'}.Str        if $session{'COMMMETHOD'};
             $STATE              = Nil;  $STATE              = $session{'STATE'}.Str             if $session{'STATE'};
-            $WAIT_SECONDS       = Nil;  $WAIT_SECONDS       = $session{'WAIT_SECONDS'}.Str      if $session{'WAIT_SECONDS'};
-            $BYTES_SENT         = Nil;  $BYTES_SENT         = $session{'BYTES_SENT'}.Str        if $session{'BYTES_SENT'};
-            $BYTES_RECEIVED     = Nil;  $BYTES_RECEIVED     = $session{'BYTES_RECEIVED'}.Str    if $session{'BYTES_RECEIVED'};
+            $WAIT_SECONDS       = Nil;  $WAIT_SECONDS       = $session{'WAIT_SECONDS'}.Int      if $session{'WAIT_SECONDS'};
+            $BYTES_SENT         = Nil;  $BYTES_SENT         = $session{'BYTES_SENT'}.Int        if $session{'BYTES_SENT'};
+            $BYTES_RECEIVED     = Nil;  $BYTES_RECEIVED     = $session{'BYTES_RECEIVED'}.Int    if $session{'BYTES_RECEIVED'};
             $SESSION_TYPE       = Nil;  $SESSION_TYPE       = $session{'SESSION_TYPE'}.Str      if $session{'SESSION_TYPE'};
             $CLIENT_PLATFORM    = Nil;  $CLIENT_PLATFORM    = $session{'CLIENT_PLATFORM'}.Str   if $session{'CLIENT_PLATFORM'};
+            $CLIENT_NAME        = Nil;  $CLIENT_NAME        = $session{'CLIENT_NAME'}.Str       if $session{'CLIENT_NAME'};
             $OWNER_NAME         = Nil;  $OWNER_NAME         = $session{'OWNER_NAME'}.Str        if $session{'OWNER_NAME'};
             $MOUNT_POINT_WAIT   = Nil;  $MOUNT_POINT_WAIT   = $session{'MOUNT_POINT_WAIT'}.Str  if $session{'MOUNT_POINT_WAIT'};
             $INPUT_MOUNT_WAIT   = Nil;  $INPUT_MOUNT_WAIT   = $session{'INPUT_MOUNT_WAIT'}.Str  if $session{'INPUT_MOUNT_WAIT'};
@@ -181,37 +185,44 @@ class Reporter does ISP::Server::Reporter {
             %!statistics{$SESSION_ID}.bytes-sent(:$BYTES_SENT);
             %!statistics{$SESSION_ID}.bytes-received(:$BYTES_RECEIVED);
 
+            my $record;
             $row                = Array.new;
-### Session:        126052 {NODE@Linux x86-64@SSL} [03:39:48]
-            $row.push:              $SESSION_ID 
-                                ~   '{'
-                                ~   $SESSION_TYPE
-                                ~   '@'
-                                ~   $CLIENT_PLATFORM
-                                ~   '@'
-                                ~   COMMMETHOD
-                                ~   '} ['
-                                ~   %!statistics{$SESSION_ID}.seconds-to-d-hh-mm-ss((now - $START_TIME).Int)
-                                ~   ']';
+            my $stime-str       = '';
+            if $START_TIME {
+                $stime-str      = ' [';
+                my $current-dt  = DateTime.new(now);
+put $START_TIME;
+put $current-dt.local;
+                $stime-str     ~= %!statistics{$SESSION_ID}.seconds-to-d-hh-mm-ss(($current-dt.local - $START_TIME).Int) ~ ']';
+            }
+            $row.push:          sprintf("[%s\<%s\>%s]%s %d", $SESSION_TYPE, $CLIENT_PLATFORM, $COMMMETHOD, $stime-str, $SESSION_ID);
+
 ### State:          IdleW [00:03:58]
-            $row.push:              $STATE
-                                ~   ' ['
-                                ~   %!statistics{$SESSION_ID}.seconds-to-d-hh-mm-ss($WAIT_SECONDS)
-                                ~   ']';
+            $record             =       $STATE
+                                    ~   ' ['
+                                    ~   %!statistics{$SESSION_ID}.seconds-to-d-hh-mm-ss($WAIT_SECONDS)
+                                    ~   ']';
+            $row.push:          $record;
 
 ### Bytes Sent:     450.0 M [Δ102.4 K]
-            $row.push:              %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-sent);
-                                ~   "[\x[0394]"
-                                ~   %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-sent-delta)
-                                ~   ']';
+            $record             =       %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-sent)
+                                    ~   "[\x[0394]"
+                                    ~   %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-sent-delta)
+                                    ~   ']';
+            $row.push:          $record;
+
 ### Bytes Received: 450.0 M [Δ102.4 K]
-            $row.push:              %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-received);
-                                ~   "[\x[0394]"
-                                ~   %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-received-delta)
-                                ~   ']';
+            $record             =       %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-received)
+                                    ~   "[\x[0394]"
+                                    ~   %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-received-delta)
+                                    ~   ']';
+            $row.push:          $record;
+
 ### Client:         DFS2K16-19@FO
-            $row.push:              CLIENT_NAME
-                                ~   $FAIL_OVER_MODE eq 'No' ?? '' !! '@FO';
+            $record             =       $CLIENT_NAME;
+            $record            ~=       '@FO'   if $FAIL_OVER_MODE eq 'Yes';
+            $row.push:          $record;
+
             self.table.add-row: $row;
         }
     }
