@@ -80,7 +80,6 @@ class ISP-Sessions-statistics {
 
     method bytes-sent (Int :$BYTES_SENT) {
         return $!bytes-sent         without $BYTES_SENT;
-#       my $actual-bytes-sent       = self.to-bytes($BYTES_SENT).Int;
         my $actual-bytes-sent       = $BYTES_SENT;
         $!last-bytes-sent           = $actual-bytes-sent unless $!last-bytes-sent >= 0;
         $!bytes-sent-delta          = $actual-bytes-sent - $!last-bytes-sent;
@@ -94,7 +93,6 @@ class ISP-Sessions-statistics {
 
     method bytes-received (Int :$BYTES_RECEIVED) {
         return $!bytes-received     without $BYTES_RECEIVED;
-#       my $actual-bytes-received   = self.to-bytes($BYTES_RECEIVED).Int;
         my $actual-bytes-received   = $BYTES_RECEIVED;
         $!last-bytes-received       = $actual-bytes-received unless $!last-bytes-received >= 0;
         $!bytes-received-delta      = $actual-bytes-received - $!last-bytes-received;
@@ -180,27 +178,27 @@ class Reporter does ISP::Server::Reporter {
                 $row.push:      $STATE;
             }
             if %!statistics{$SESSION_ID}.bytes-sent-delta {
-#               $row.push:      sprintf("%9s %8s", '[' ~ "\x[0394] " ~ %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-sent-delta) ~ ']',
-                $row.push:      sprintf("%9s %8s", '[' ~ %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-sent-delta) ~ ']',
-                                                    %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-sent),
+                $row.push:      sprintf("%10s %8s", '[' ~ "\x[0394] " ~ %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-sent-delta) ~ ']',
+#               $row.push:      sprintf("%10s %8s", '[' ~ %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-sent-delta) ~ ']',
+                                                     %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-sent),
                                        );
             }
             else {
-                $row.push:      sprintf("%18s", %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-sent));
+                $row.push:      sprintf("%19s", %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-sent));
             }
             if %!statistics{$SESSION_ID}.bytes-received-delta {
-#               $row.push:      sprintf("%9s %8s", '[' ~ "\x[0394] " ~ %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-received-delta) ~ ']',
-                $row.push:      sprintf("%9s %8s", '[' ~ %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-received-delta) ~ ']',
+                $row.push:      sprintf("%10s %8s", '[' ~ "\x[0394] " ~ %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-received-delta) ~ ']',
+#               $row.push:      sprintf("%10s %8s", '[' ~ %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-received-delta) ~ ']',
                                                     %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-received),
                                        );
             }
             else {
-                $row.push:      sprintf("%18s", %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-received));
+                $row.push:      sprintf("%19s", %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-received));
             }
             my $record          =       $CLIENT_NAME;
             $record            ~=       '@FO'   if $FAIL_OVER_MODE eq 'Yes';
             $row.push:          $record;
-dd $row;
+#dd $row;
             self.table.add-row: $row;
         }
     }
