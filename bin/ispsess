@@ -227,7 +227,7 @@ sub MAIN (
     @fields.push:   ISP::Server::Reporter::Field.new(:name('State'),            :alignment('r'));
     @fields.push:   ISP::Server::Reporter::Field.new(:name('Bytes Sent'),       :alignment('c'));
     @fields.push:   ISP::Server::Reporter::Field.new(:name('Bytes Received'),   :alignment('c'));
-    @fields.push:   ISP::Server::Reporter::Field.new(:name('Client'),           :alignment('l'));
+    @fields.push:   ISP::Server::Reporter::Field.new(:name('Client'),           :alignment('r'));
     my $reporter    = Reporter.new(
                                     :$isp-server,
                                     :$isp-admin,
