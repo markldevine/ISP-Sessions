@@ -139,7 +139,7 @@ class Reporter does ISP::Server::Reporter {
                 next unless self.client-name.fc eq $CLIENT_NAME.fc;
             }
             $SESSION_ID         = 0;    $SESSION_ID         = $session{'SESSION_ID'}.Int        if $session{'SESSION_ID'};
-            $START_TIME         = ' ';  $START_TIME         = $session{'START_TIME'}.DateTime   if $session{'START_TIME'};
+            $START_TIME         = Nil;  $START_TIME         = $session{'START_TIME'}.DateTime   if $session{'START_TIME'};
             $COMMMETHOD         = ' ';  $COMMMETHOD         = $session{'COMMMETHOD'}.Str        if $session{'COMMMETHOD'};
             $STATE              = ' ';  $STATE              = $session{'STATE'}.Str             if $session{'STATE'};
             $WAIT_SECONDS       = 0;    $WAIT_SECONDS       = $session{'WAIT_SECONDS'}.Int      if $session{'WAIT_SECONDS'};
