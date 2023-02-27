@@ -171,7 +171,7 @@ class Reporter does ISP::Server::Reporter {
             $row.push:          $COMMMETHOD;
             $row.push:          $SESSION_TYPE;
             $row.push:          $CLIENT_PLATFORM;
-            if $WAIT_SECONDS {
+            if $WAIT_SECONDS && $WAIT_SECONDS > 10 {
                 $row.push:      '[' ~ %!statistics{$SESSION_ID}.seconds-to-d-hh-mm-ss($WAIT_SECONDS) ~ '] ' ~ $STATE.fmt("%6s");
             }
             else {
