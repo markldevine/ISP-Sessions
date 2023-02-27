@@ -133,8 +133,8 @@ class Reporter does ISP::Server::Reporter {
         my Str      $COMMMETHOD;                            # SSL
         my Str      $STATE;                                 # RecvW
         my Int      $WAIT_SECONDS;                          # 0
-        my Str      $BYTES_SENT;                            # 1277
-        my Str      $BYTES_RECEIVED;                        # 1123077711
+        my Int      $BYTES_SENT;                            # 1277
+        my Int      $BYTES_RECEIVED;                        # 1123077711
         my Str      $SESSION_TYPE;                          # Node
         my Str      $CLIENT_PLATFORM;                       # TDP Oracle AIX
         my Str      $CLIENT_NAME;                           # CADBBUSDR10-NBUSPRD1-TDP
@@ -156,13 +156,13 @@ class Reporter does ISP::Server::Reporter {
             if self.client-name {
                 next unless self.client-name.fc eq $CLIENT_NAME.fc;
             }
-            $SESSION_ID         = Nil;  $SESSION_ID         = $session{'SESSION_ID'}.Int        if $session{'SESSION_ID'};
+            $SESSION_ID         = 0;    $SESSION_ID         = $session{'SESSION_ID'}.Int        if $session{'SESSION_ID'};
             $START_TIME         = Nil;  $START_TIME         = $session{'START_TIME'}.DateTime   if $session{'START_TIME'};
             $COMMMETHOD         = Nil;  $COMMMETHOD         = $session{'COMMMETHOD'}.Str        if $session{'COMMMETHOD'};
             $STATE              = Nil;  $STATE              = $session{'STATE'}.Str             if $session{'STATE'};
-            $WAIT_SECONDS       = Nil;  $WAIT_SECONDS       = $session{'WAIT_SECONDS'}.Int      if $session{'WAIT_SECONDS'};
-            $BYTES_SENT         = Nil;  $BYTES_SENT         = $session{'BYTES_SENT'}.Str        if $session{'BYTES_SENT'};
-            $BYTES_RECEIVED     = Nil;  $BYTES_RECEIVED     = $session{'BYTES_RECEIVED'}.Str    if $session{'BYTES_RECEIVED'};
+            $WAIT_SECONDS       = 0;    $WAIT_SECONDS       = $session{'WAIT_SECONDS'}.Int      if $session{'WAIT_SECONDS'};
+            $BYTES_SENT         = 0;    $BYTES_SENT         = $session{'BYTES_SENT'}.Int        if $session{'BYTES_SENT'};
+            $BYTES_RECEIVED     = 0;    $BYTES_RECEIVED     = $session{'BYTES_RECEIVED'}.Int    if $session{'BYTES_RECEIVED'};
             $SESSION_TYPE       = Nil;  $SESSION_TYPE       = $session{'SESSION_TYPE'}.Str      if $session{'SESSION_TYPE'};
             $CLIENT_PLATFORM    = Nil;  $CLIENT_PLATFORM    = $session{'CLIENT_PLATFORM'}.Str   if $session{'CLIENT_PLATFORM'};
             $CLIENT_NAME        = Nil;  $CLIENT_NAME        = $session{'CLIENT_NAME'}.Str       if $session{'CLIENT_NAME'};
@@ -198,20 +198,22 @@ class Reporter does ISP::Server::Reporter {
                 $row.push:      $STATE;
             }
             if %!statistics{$SESSION_ID}.bytes-sent-delta {
-                $row.push:      sprintf("%-11s%8s", '[' ~ "\x[0394] " ~ %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-sent-delta) ~ ']',
-                                                    %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-sent),
+#               $row.push:      sprintf("%-11s%8s", '[' ~ "\x[0394] " ~ %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-sent-delta) ~ ']',
+                $row.push:      sprintf("%-11s%8s", '[' ~ %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-sent-delta) ~ ']',
+                                                    %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-sent) || ' ',
                                        );
             }
             else {
                 $row.push:      sprintf("%19s", %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-sent));
             }
             if %!statistics{$SESSION_ID}.bytes-received-delta {
-                $row.push:      sprintf("%-11s%8s", '[' ~ "\x[0394] " ~ %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-received-delta) ~ ']',
+#               $row.push:      sprintf("%-11s%8s", '[' ~ "\x[0394] " ~ %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-received-delta) ~ ']',
+                $row.push:      sprintf("%-11s%8s", '[' ~ %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-received-delta) ~ ']',
                                                     %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-received),
                                        );
             }
             else {
-                $row.push:      sprintf("%19s", %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-received));
+                $row.push:      sprintf("%19s", %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-received || ' '));
             }
             my $record          =       $CLIENT_NAME;
             $record            ~=       '@FO'   if $FAIL_OVER_MODE eq 'Yes';
@@ -236,7 +238,8 @@ sub MAIN (
     my @command     = ['SELECT', '*', 'FROM', 'SESSIONS'];
     my @fields;
     @fields.push:   ISP::Server::Reporter::Field.new(:name('Session'),          :alignment('c'));
-    @fields.push:   ISP::Server::Reporter::Field.new(:name("Active \x[029D6]"), :alignment('r'));
+#   @fields.push:   ISP::Server::Reporter::Field.new(:name("Active \x[029D6]"), :alignment('r'));
+    @fields.push:   ISP::Server::Reporter::Field.new(:name("Active"), :alignment('r'));
     @fields.push:   ISP::Server::Reporter::Field.new(:name('Comm'),             :alignment('c'));
     @fields.push:   ISP::Server::Reporter::Field.new(:name('Type'),             :alignment('c'));
     @fields.push:   ISP::Server::Reporter::Field.new(:name('Platform'),         :alignment('c'));
