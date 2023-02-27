@@ -182,22 +182,22 @@ class Reporter does ISP::Server::Reporter {
                 $row.push:      $STATE;
             }
             if %!statistics{$SESSION_ID}.bytes-sent-delta {
-#               $row.push:      sprintf("%10s %8s", '[' ~ "\x[0394] " ~ %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-sent-delta) ~ ']',
-                $row.push:      sprintf("%10s %8s", '[' ~ %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-sent-delta) ~ ']',
+#               $row.push:      sprintf("%9s %8s", '[' ~ "\x[0394] " ~ %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-sent-delta) ~ ']',
+                $row.push:      sprintf("%9s %8s", '[' ~ %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-sent-delta) ~ ']',
                                                     %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-sent) || ' ',
                                        );
             }
             else {
-                $row.push:      sprintf("%18s", %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-sent));
+                $row.push:      sprintf("%17s", %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-sent));
             }
             if %!statistics{$SESSION_ID}.bytes-received-delta {
-#               $row.push:      sprintf("%10s %8s", '[' ~ "\x[0394] " ~ %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-received-delta) ~ ']',
-                $row.push:      sprintf("%10s %8s", '[' ~ %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-received-delta) ~ ']',
+#               $row.push:      sprintf("%9s %8s", '[' ~ "\x[0394] " ~ %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-received-delta) ~ ']',
+                $row.push:      sprintf("%9s %8s", '[' ~ %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-received-delta) ~ ']',
                                                     %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-received),
                                        );
             }
             else {
-                $row.push:      sprintf("%18s", %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-received || ' '));
+                $row.push:      sprintf("%17s", %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-received || ' '));
             }
             my $record          =       $CLIENT_NAME;
             $record            ~=       '@FO'   if $FAIL_OVER_MODE eq 'Yes';
