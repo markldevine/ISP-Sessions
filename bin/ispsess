@@ -1,7 +1,5 @@
 #!/usr/bin/env raku
 
-constant    \TIME-ZONE  = -5 * 3600;
-
 use ISP::Server::Reporter;
 
 class ISP-Sessions-statistics {
@@ -202,6 +200,7 @@ class Reporter does ISP::Server::Reporter {
             my $record          =       $CLIENT_NAME;
             $record            ~=       '@FO'   if $FAIL_OVER_MODE eq 'Yes';
             $row.push:          $record;
+dd $row;
             self.table.add-row: $row;
         }
     }
