@@ -80,7 +80,7 @@ class ISP-Sessions-statistics {
         }
     }
 
-    method bytes-sent (Str :$BYTES_SENT) {
+    method bytes-sent (Int :$BYTES_SENT) {
         return $!bytes-sent         without $BYTES_SENT;
         my $actual-bytes-sent       = self.to-bytes($BYTES_SENT).Int;
         $!last-bytes-sent           = $actual-bytes-sent unless $!last-bytes-sent >= 0;
@@ -93,7 +93,7 @@ class ISP-Sessions-statistics {
     has Int $.bytes-received-delta  = 0;
     has Int $!last-bytes-received   = -1;
 
-    method bytes-received (Str :$BYTES_RECEIVED) {
+    method bytes-received (Int :$BYTES_RECEIVED) {
         return $!bytes-received     without $BYTES_RECEIVED;
         my $actual-bytes-received   = self.to-bytes($BYTES_RECEIVED).Int;
         $!last-bytes-received       = $actual-bytes-received unless $!last-bytes-received >= 0;
