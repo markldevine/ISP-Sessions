@@ -184,7 +184,7 @@ class Reporter does ISP::Server::Reporter {
                                        );
             }
             else {
-                $row.push:      sprintf("%19s", %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-sent));
+                $row.push:      sprintf("%21s", %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-sent));
             }
             if %!statistics{$SESSION_ID}.bytes-received-delta {
                 $row.push:      sprintf("%10s %8s", '[' ~ "\x[0394] " ~ %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-received-delta) ~ ']',
@@ -193,7 +193,7 @@ class Reporter does ISP::Server::Reporter {
                                        );
             }
             else {
-                $row.push:      sprintf("%19s", %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-received));
+                $row.push:      sprintf("%21s", %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-received));
             }
             my $record          =       $CLIENT_NAME;
             $record            ~=       '@FO'   if $FAIL_OVER_MODE eq 'Yes';
