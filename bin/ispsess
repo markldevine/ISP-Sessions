@@ -240,7 +240,7 @@ sub MAIN (
                                     :@command,
                                     :@fields,
                                     :$client-name,
-                                    :sort-by('Session'),
+                                    :sort-by('Client'),
                                   );
     $reporter.loop;
 }
