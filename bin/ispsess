@@ -217,8 +217,10 @@ sub MAIN (
     Bool    :$grid,                                 #= Full table grid
     Bool    :$clear,                                #= Clear the screen with each iteration
     Str     :$client-name,                          #= ISP CLIENT/NODE name
+    Bool    :$nodes-only,                           #= NODEs only
 ) {
     my @command     = ['SELECT', '*', 'FROM', 'SESSIONS'];
+    @command.append: 'WHERE', 'SESSION_TYPE=' ~ "'" ~ 'Node' ~ "'" if $nodes-only;
     my @fields;
     @fields.push:   ISP::Server::Reporter::Field.new(:name('Session'),                  :alignment('c'));
     @fields.push:   ISP::Server::Reporter::Field.new(:name("Active \x[029D6]"),         :alignment('r'));
