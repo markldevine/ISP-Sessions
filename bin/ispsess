@@ -2,81 +2,81 @@
 
 use ISP::Server::Reporter;
 
-class ISP-Sessions-statistics {
+constant \KILO      = 1024;
+constant \MEGA      = KILO      * 1024;
+constant \GIGA      = MEGA      * 1024;
+constant \TERA      = GIGA      * 1024;
+constant \PETA      = TERA      * 1024;
 
-    constant \KILO      = 1024;
-    constant \MEGA      = KILO      * 1024;
-    constant \GIGA      = MEGA      * 1024;
-    constant \TERA      = GIGA      * 1024;
-    constant \PETA      = TERA      * 1024;
+constant \MINUTE    = 60;
+constant \HOUR      = MINUTE    * 60;
+constant \DAY       = HOUR      * 24;
 
-    constant \MINUTE    = 60;
-    constant \HOUR      = MINUTE    * 60;
-    constant \DAY       = HOUR      * 24;
-
-    method seconds-to-d-hh-mm-ss (Int:D $total-seconds) {
-        my $dhms        = 'hh:mm:ss';
-        my $days        = 0;
-        my $hours       = 0;
-        my $minutes     = 0;
-        my $seconds     = $total-seconds;
-        my $result;
-        if $seconds >= DAY {
-            $days       = ($seconds / DAY).Int;
-            $result     = $days ~ 'd ';
-            $seconds   -= $days * DAY;
+sub to-bytes (Str:D $num-unit) {
+    if $num-unit ~~ / ^ (\d+ '.'* \d*) \s* (\w*) $ / {
+        my $actual  = $0.Str.comb.grep(/ \d | '.' /).join;
+        my $unit    = $1.Str with $1;
+        given $unit {
+            when 'K'    { return $actual * KILO }
+            when 'M'    { return $actual * MEGA }
+            when 'G'    { return $actual * GIGA }
+            when 'T'    { return $actual * TERA }
+            when 'P'    { return $actual * PETA }
+            default     { return $actual;       }
         }
-        if $seconds >= HOUR {
-            $hours      = ($seconds / HOUR).Int;
-            $result    ~= $hours.fmt("%02d");
-            $seconds   -= $hours * HOUR;
-        }
-        else {
-            $result    ~= '00';
-        }
-        if $seconds >= MINUTE {
-            $minutes    = ($seconds / MINUTE).Int;
-            $result    ~= ':' ~ $minutes.fmt("%02d") ~ ':';
-            $seconds   -= $minutes * MINUTE;
-        }
-        else {
-            $result    ~= ':00:';
-        }
-        $seconds        = 0 if $seconds < 0;
-        $result        ~= $seconds.fmt("%02d");
-        return $result;
     }
+    return $num-unit;
+}
+
+sub bytes-to-unit (Int:D $bytes) {
+    given $bytes {
+        when $_ >= PETA { return ($bytes / PETA).fmt("%.1f P"); }
+        when $_ >= TERA { return ($bytes / TERA).fmt("%.1f T"); }
+        when $_ >= GIGA { return ($bytes / GIGA).fmt("%.1f G"); }
+        when $_ >= MEGA { return ($bytes / MEGA).fmt("%.1f M"); }
+        when $_ >= KILO { return ($bytes / KILO).fmt("%.1f K"); }
+        default         { return $bytes.fmt("%s B");            }
+    }
+}
+
+sub seconds-to-d-hh-mm-ss (Int:D $total-seconds) {
+    my $dhms        = 'hh:mm:ss';
+    my $days        = 0;
+    my $hours       = 0;
+    my $minutes     = 0;
+    my $seconds     = $total-seconds;
+    my $result;
+    if $seconds >= DAY {
+        $days       = ($seconds / DAY).Int;
+        $result     = $days ~ 'd ';
+        $seconds   -= $days * DAY;
+    }
+    if $seconds >= HOUR {
+        $hours      = ($seconds / HOUR).Int;
+        $result    ~= $hours.fmt("%02d");
+        $seconds   -= $hours * HOUR;
+    }
+    else {
+        $result    ~= '00';
+    }
+    if $seconds >= MINUTE {
+        $minutes    = ($seconds / MINUTE).Int;
+        $result    ~= ':' ~ $minutes.fmt("%02d") ~ ':';
+        $seconds   -= $minutes * MINUTE;
+    }
+    else {
+        $result    ~= ':00:';
+    }
+    $seconds        = 0 if $seconds < 0;
+    $result        ~= $seconds.fmt("%02d");
+    return $result;
+}
+
+class ISP-Sessions-statistics {
 
     has Int $!bytes-sent            = 0;
     has Int $.bytes-sent-delta      = 0;
     has Int $!last-bytes-sent       = -1;
-
-    method to-bytes (Str:D $num-unit) {
-        if $num-unit ~~ / ^ (\d+ '.'* \d*) \s* (\w*) $ / {
-            my $actual  = $0.Str.comb.grep(/ \d | '.' /).join;
-            my $unit    = $1.Str with $1;
-            given $unit {
-                when 'K'    { return $actual * KILO }
-                when 'M'    { return $actual * MEGA }
-                when 'G'    { return $actual * GIGA }
-                when 'T'    { return $actual * TERA }
-                when 'P'    { return $actual * PETA }
-                default     { return $actual;       }
-            }
-        }
-        return $num-unit;
-    }
-
-    method bytes-to-unit (Int:D $bytes) {
-        given $bytes {
-            when $_ >= PETA { return ($bytes / PETA).fmt("%.1f P"); }
-            when $_ >= TERA { return ($bytes / TERA).fmt("%.1f T"); }
-            when $_ >= GIGA { return ($bytes / GIGA).fmt("%.1f G"); }
-            when $_ >= MEGA { return ($bytes / MEGA).fmt("%.1f M"); }
-            when $_ >= KILO { return ($bytes / KILO).fmt("%.1f K"); }
-            default         { return $bytes.fmt("%s B");            }
-        }
-    }
 
     method bytes-sent (Int :$BYTES_SENT) {
         return $!bytes-sent         without $BYTES_SENT;
@@ -165,39 +165,39 @@ class Reporter does ISP::Server::Reporter {
             my $active          = '';
             if $START_TIME {
                 my $current-dt  = DateTime.new(now, :timezone(self.seconds-offset-UTC));
-                $active         = %!statistics{$SESSION_ID}.seconds-to-d-hh-mm-ss(($current-dt.local - $START_TIME).Int);
+                $active         = seconds-to-d-hh-mm-ss(($current-dt.local - $START_TIME).Int);
             }
             $row.push:          $active;
             $row.push:          $COMMMETHOD;
             $row.push:          $SESSION_TYPE;
             $row.push:          $CLIENT_PLATFORM;
             if $WAIT_SECONDS && $WAIT_SECONDS > 10 {
-                $row.push:      '[' ~ %!statistics{$SESSION_ID}.seconds-to-d-hh-mm-ss($WAIT_SECONDS) ~ '] ' ~ $STATE.fmt("%6s");
+                $row.push:      '[' ~ seconds-to-d-hh-mm-ss($WAIT_SECONDS) ~ '] ' ~ $STATE.fmt("%6s");
             }
             else {
                 $row.push:      $STATE;
             }
             if %!statistics{$SESSION_ID}.bytes-sent-delta {
                 $row.push:      sprintf("%7s%10s",
-                                        %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-sent),
-                                        "+" ~ %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-sent-delta),
+                                        bytes-to-unit(%!statistics{$SESSION_ID}.bytes-sent),
+                                        "+" ~ bytes-to-unit(%!statistics{$SESSION_ID}.bytes-sent-delta),
                                 );
             }
             else {
                 $row.push:      sprintf("%7s%10s",
-                                        %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-sent),
+                                        bytes-to-unit(%!statistics{$SESSION_ID}.bytes-sent),
                                         ' ',
                                 );
             }
             if %!statistics{$SESSION_ID}.bytes-received-delta {
                 $row.push:      sprintf("%7s%10s",
-                                        %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-received),
-                                        "+" ~ %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-received-delta),
+                                        bytes-to-unit(%!statistics{$SESSION_ID}.bytes-received),
+                                        "+" ~ bytes-to-unit(%!statistics{$SESSION_ID}.bytes-received-delta),
                                 );
             }
             else {
                 $row.push:      sprintf("%7s%10s",
-                                        %!statistics{$SESSION_ID}.bytes-to-unit(%!statistics{$SESSION_ID}.bytes-received),
+                                        bytes-to-unit(%!statistics{$SESSION_ID}.bytes-received),
                                         ' ',
                                 );
             }
