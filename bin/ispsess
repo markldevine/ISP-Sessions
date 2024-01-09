@@ -107,7 +107,7 @@ class Reporter does ISP::Server::Reporter {
 
     has $.client-name;
 
-    method process-rows (@sessions) {
+    method process-rows ($sessions) {
         my Int      $SESSION_ID;                            # 872694
         my DateTime $START_TIME;                            # 2023-02-25 15:05:15.000000
         my Str      $COMMMETHOD;                            # SSL
@@ -131,7 +131,7 @@ class Reporter does ISP::Server::Reporter {
         my Str      $FAIL_OVER_MODE;                        # No
 
         my $row;
-        for @sessions -> $session {
+        for $sessions.list -> $session {
             $CLIENT_NAME        = Nil;  $CLIENT_NAME        = $session{'CLIENT_NAME'}.Str       if $session{'CLIENT_NAME'};
             if self.client-name {
                 next unless self.client-name.fc eq $CLIENT_NAME.fc;
@@ -219,6 +219,7 @@ sub MAIN (
     Str     :$client-name,                          #= ISP CLIENT/NODE name
     Bool    :$nodes-only,                           #= NODEs only
     Bool    :$servers-only,                         #= Servers only
+    Bool    :$cache,                                #= Read from cache
 ) {
     my @command     = ['SELECT', '*', 'FROM', 'SESSIONS'];
     if $nodes-only {
@@ -249,6 +250,7 @@ sub MAIN (
                                     :@fields,
                                     :$client-name,
                                     :sort-by('Client'),
+                                    :$cache,
                                   );
     $reporter.loop;
 }
