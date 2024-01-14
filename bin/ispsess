@@ -209,17 +209,28 @@ class Reporter does ISP::Server::Reporter {
     }
 }
 
+enum UI (
+#   ALIGNEDTXT  =>  'Reporter::Aligned::Text',
+#   BORDERTXT   =>  'Reporter::Prettier::Table',
+    BORDERTXT   =>  'ISP::Server::Reporter',
+#   CURSES      =>  'Reporter::Curses',
+#   CSV         =>  'Reporter::CSV',
+#   GRAPHICAL   =>  'Reporter::Graphical',
+    NAVTXT      =>  'Reporter::Term::TablePrint',
+);
+
 sub MAIN (
-    Str:D   :$isp-server!,                          #= ISP server name
-    Str:D   :$isp-admin!,                           #= ISP server name
-    Int:D   :$interval      where * >= 5    = 58,   #= Refresh every --interval seconds (minimum 5s)
-    Int:D   :$count                         = 1,    #= Number of refreshes (0 is infinity)
-    Bool    :$grid,                                 #= Full table grid
-    Bool    :$clear,                                #= Clear the screen with each iteration
-    Str     :$client-name,                          #= ISP CLIENT/NODE name
-    Bool    :$nodes-only,                           #= NODEs only
-    Bool    :$servers-only,                         #= Servers only
-    Bool    :$cache,                                #= Read from cache
+    Str:D   :$isp-server!,                                  #= ISP server name
+    Str:D   :$isp-admin!,                                   #= ISP server name
+    Int:D   :$interval      where * >= 5    = 58,           #= Refresh every --interval seconds (minimum 5s)
+    Int:D   :$count                         = 1,            #= Number of refreshes (0 is infinity)
+    Bool    :$grid,                                         #= Full table grid
+    Bool    :$clear,                                        #= Clear the screen with each iteration
+    Str     :$client-name,                                  #= ISP CLIENT/NODE name
+    Bool    :$nodes-only,                                   #= NODEs only
+    Bool    :$servers-only,                                 #= Servers only
+    Bool    :$cache,                                        #= Read from cache
+    UI      :$ui                            = BORDERTXT,    #= User interface
 ) {
     my @command     = ['SELECT', '*', 'FROM', 'SESSIONS'];
     if $nodes-only {
@@ -238,6 +249,10 @@ sub MAIN (
     @fields.push:   ISP::Server::Reporter::Field.new(:name("Bytes Sent +\x[0394]"),     :alignment('c'));
     @fields.push:   ISP::Server::Reporter::Field.new(:name("Bytes Received +\x[0394]"), :alignment('c'));
     @fields.push:   ISP::Server::Reporter::Field.new(:name('Client'),                   :alignment('r'));
+
+
+
+#   my $reporter    = ::($ui.value).new(
     my $reporter    = Reporter.new(
                                     :$isp-server,
                                     :$isp-admin,
