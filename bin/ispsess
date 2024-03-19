@@ -43,7 +43,7 @@ class Reporter does ISP::Server::Reporter {
         $!grid.add-heading: :cell(Our::Grid::Cell.new: :text('Comm'),                       :justification<left>);
         $!grid.add-heading: :cell(Our::Grid::Cell.new: :text('Type'),                       :justification<left>);
         $!grid.add-heading: :cell(Our::Grid::Cell.new: :text('Platform'),                   :justification<left>);
-        $!grid.add-heading: :cell(Our::Grid::Cell.new: :text('State'),                      :justification<left>);
+        $!grid.add-heading: :cell(Our::Grid::Cell.new: :text('State'),                      :justification<right>);
         $!grid.add-heading: :cell(Our::Grid::Cell.new: :text("Bytes Sent +\x[0394]"),       :justification<left>);
         $!grid.add-heading: :cell(Our::Grid::Cell.new: :text("Bytes Received +\x[0394]"),   :justification<left>);
         $!grid.add-heading: :cell(Our::Grid::Cell.new: :text('Client'),                     :justification<left>);
@@ -113,10 +113,10 @@ class Reporter does ISP::Server::Reporter {
             $!grid.add-cell:        $SESSION_TYPE,      :justification<left>;
             $!grid.add-cell:        $CLIENT_PLATFORM,   :justification<left>;
             if $WAIT_SECONDS && $WAIT_SECONDS > 10 {
-                $!grid.add-cell:    '[' ~ seconds-to-y-d-hh-mm-ss($WAIT_SECONDS) ~ '] ' ~ $STATE.fmt("%6s"), :justification<left>;
+                $!grid.add-cell:    '[' ~ seconds-to-y-d-hh-mm-ss($WAIT_SECONDS) ~ '] ' ~ $STATE.fmt("%6s"), :justification<right>;
             }
             else {
-                $!grid.add-cell:    $STATE,             :justification<left>;
+                $!grid.add-cell:    $STATE,             :justification<right>;
             }
             if %!statistics{$SESSION_ID}.bytes-sent-delta {
                 $!grid.add-cell:    sprintf("%8s%11s", bytes-to-bytes-unit(%!statistics{$SESSION_ID}.bytes-sent), "+" ~ bytes-to-bytes-unit(%!statistics{$SESSION_ID}.bytes-sent-delta)), :justification<left>;
