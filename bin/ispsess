@@ -181,43 +181,31 @@ class Reporter does ISP::Server::Reporter {
                 my $current-dt  = DateTime.new(now, :timezone(self.seconds-offset-UTC));
                 $active         = seconds-to-y-d-hh-mm-ss(($current-dt.local - $START_TIME).Int);
             }
-            $!grid.add-cell:          $active;
-            $!grid.add-cell:          $COMMMETHOD;
-            $!grid.add-cell:          $SESSION_TYPE;
-            $!grid.add-cell:          $CLIENT_PLATFORM;
+            $!grid.add-cell:        $active;
+            $!grid.add-cell:        $COMMMETHOD;
+            $!grid.add-cell:        $SESSION_TYPE;
+            $!grid.add-cell:        $CLIENT_PLATFORM;
             if $WAIT_SECONDS && $WAIT_SECONDS > 10 {
-                $!grid.add-cell:      '[' ~ seconds-to-y-d-hh-mm-ss($WAIT_SECONDS) ~ '] ' ~ $STATE.fmt("%6s");
+                $!grid.add-cell:    '[' ~ seconds-to-y-d-hh-mm-ss($WAIT_SECONDS) ~ '] ' ~ $STATE.fmt("%6s");
             }
             else {
-                $!grid.add-cell:      $STATE;
+                $!grid.add-cell:    $STATE;
             }
             if %!statistics{$SESSION_ID}.bytes-sent-delta {
-                $!grid.add-cell:      sprintf("%8s%11s",
-                                        bytes-to-bytes-unit(%!statistics{$SESSION_ID}.bytes-sent),
-                                        "+" ~ bytes-to-bytes-unit(%!statistics{$SESSION_ID}.bytes-sent-delta),
-                                );
+                $!grid.add-cell:    sprintf("%8s%11s", bytes-to-bytes-unit(%!statistics{$SESSION_ID}.bytes-sent), "+" ~ bytes-to-bytes-unit(%!statistics{$SESSION_ID}.bytes-sent-delta));
             }
             else {
-                $!grid.add-cell:      sprintf("%8s%11s",
-                                        bytes-to-bytes-unit(%!statistics{$SESSION_ID}.bytes-sent),
-                                        ' ',
-                                );
+                $!grid.add-cell:    sprintf("%8s%11s", bytes-to-bytes-unit(%!statistics{$SESSION_ID}.bytes-sent), ' ');
             }
             if %!statistics{$SESSION_ID}.bytes-received-delta {
-                $!grid.add-cell:      sprintf("%8s%11s",
-                                        bytes-to-bytes-unit(%!statistics{$SESSION_ID}.bytes-received),
-                                        "+" ~ bytes-to-bytes-unit(%!statistics{$SESSION_ID}.bytes-received-delta),
-                                );
+                $!grid.add-cell:    sprintf("%8s%11s", bytes-to-bytes-unit(%!statistics{$SESSION_ID}.bytes-received), "+" ~ bytes-to-bytes-unit(%!statistics{$SESSION_ID}.bytes-received-delta));
             }
             else {
-                $!grid.add-cell:      sprintf("%8s%11s",
-                                        bytes-to-bytes-unit(%!statistics{$SESSION_ID}.bytes-received),
-                                        ' ',
-                                );
+                $!grid.add-cell:    sprintf("%8s%11s", bytes-to-bytes-unit(%!statistics{$SESSION_ID}.bytes-received), ' ');
             }
             my $record          =       $CLIENT_NAME;
             $record            ~=       '@FO'   if $FAIL_OVER_MODE eq 'Yes';
-            $!grid.add-cell:          $record;
+            $!grid.add-cell:        $record;
             $!grid.current-row++;
         }
     }
@@ -228,7 +216,6 @@ sub MAIN (
     Str:D   :$isp-admin!,                                   #= ISP server name
     Int:D   :$interval      where * >= 5    = 58,           #= Refresh every --interval seconds (minimum 5s)
     Int:D   :$count                         = 1,            #= Number of refreshes (0 is infinity)
-    Bool    :$grid,                                         #= Full table grid
     Bool    :$clear,                                        #= Clear the screen with each iteration
     Str     :$client-name,                                  #= ISP CLIENT/NODE name
     Bool    :$nodes-only,                                   #= NODEs only
@@ -249,6 +236,9 @@ sub MAIN (
     Bool    :$tui,                                                  #= Terminal User Interface
     Bool    :$xml,                                                  #= dump XML to STDOUT
 ) {
+    my @sort-columns;
+    @sort-columns       = $sort-columns.split(',').map({ $_.Int }) if $sort-columns;
+
     my @command     = ['SELECT', '*', 'FROM', 'SESSIONS'];
     if $nodes-only {
         @command.append: 'WHERE', 'SESSION_TYPE=' ~ "'" ~ 'Node' ~ "'";
@@ -257,12 +247,10 @@ sub MAIN (
         @command.append: 'WHERE', 'SESSION_TYPE=' ~ "'" ~ 'Server' ~ "'";
     }
 
-#   my $reporter    = ::($ui.value).new(
-    my $reporter    = Reporter.new(
+    my Reporter $reporter  .= new:
                                     :$isp-server,
                                     :$isp-admin,
                                     :$count,
-                                    :$grid,
                                     :$clear,
                                     :$interval,
                                     :title('IBM Spectrum Protect: ' ~ $isp-server ~ ' Sessions'),
@@ -282,7 +270,7 @@ sub MAIN (
                                     :$text,
                                     :$tui,
                                     :$xml,
-                                  );
+                                  ;
     $reporter.loop;
 }
 
