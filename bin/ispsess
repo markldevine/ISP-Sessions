@@ -1,76 +1,81 @@
 #!/usr/bin/env raku
 
 use ISP::Server::Reporter;
+use Our::Grid;
+use Our::Utilities;
 
-constant \KILO      = 1024;
-constant \MEGA      = KILO      * 1024;
-constant \GIGA      = MEGA      * 1024;
-constant \TERA      = GIGA      * 1024;
-constant \PETA      = TERA      * 1024;
+#constant \KILO      = 1024;
+#constant \MEGA      = KILO      * 1024;
+#constant \GIGA      = MEGA      * 1024;
+#constant \TERA      = GIGA      * 1024;
+#constant \PETA      = TERA      * 1024;
 
-constant \MINUTE    = 60;
-constant \HOUR      = MINUTE    * 60;
-constant \DAY       = HOUR      * 24;
+#constant \MINUTE    = 60;
+#constant \HOUR      = MINUTE    * 60;
+#constant \DAY       = HOUR      * 24;
 
-sub to-bytes (Str:D $num-unit) {
-    if $num-unit ~~ / ^ (\d+ '.'* \d*) \s* (\w*) $ / {
-        my $actual  = $0.Str.comb.grep(/ \d | '.' /).join;
-        my $unit    = $1.Str with $1;
-        given $unit {
-            when 'K'    { return $actual * KILO }
-            when 'M'    { return $actual * MEGA }
-            when 'G'    { return $actual * GIGA }
-            when 'T'    { return $actual * TERA }
-            when 'P'    { return $actual * PETA }
-            default     { return $actual;       }
-        }
-    }
-    return $num-unit;
-}
+#bytes-unit-to-bytes (Str:D $num-unit, :$commas, :$round)
+#sub to-bytes (Str:D $num-unit) {
+#    if $num-unit ~~ / ^ (\d+ '.'* \d*) \s* (\w*) $ / {
+#        my $actual  = $0.Str.comb.grep(/ \d | '.' /).join;
+#        my $unit    = $1.Str with $1;
+#        given $unit {
+#            when 'K'    { return $actual * KILO }
+#            when 'M'    { return $actual * MEGA }
+#            when 'G'    { return $actual * GIGA }
+#            when 'T'    { return $actual * TERA }
+#            when 'P'    { return $actual * PETA }
+#            default     { return $actual;       }
+#        }
+#    }
+#    return $num-unit;
+#}
 
-sub bytes-to-unit (Int:D $bytes) {
-    given $bytes {
-        when $_ >= PETA { return ($bytes / PETA).fmt("%.1f P"); }
-        when $_ >= TERA { return ($bytes / TERA).fmt("%.1f T"); }
-        when $_ >= GIGA { return ($bytes / GIGA).fmt("%.1f G"); }
-        when $_ >= MEGA { return ($bytes / MEGA).fmt("%.1f M"); }
-        when $_ >= KILO { return ($bytes / KILO).fmt("%.1f K"); }
-        default         { return $bytes.fmt("%s B");            }
-    }
-}
+#bytes-to-bytes-unit (Int:D $bytes, Int:D :$digits = 1) is export {
+#sub bytes-to-unit (Int:D $bytes) {
+#    given $bytes {
+#        when $_ >= PETA { return ($bytes / PETA).fmt("%.1f P"); }
+#        when $_ >= TERA { return ($bytes / TERA).fmt("%.1f T"); }
+#        when $_ >= GIGA { return ($bytes / GIGA).fmt("%.1f G"); }
+#        when $_ >= MEGA { return ($bytes / MEGA).fmt("%.1f M"); }
+#        when $_ >= KILO { return ($bytes / KILO).fmt("%.1f K"); }
+#        default         { return $bytes.fmt("%s B");            }
+#    }
+#}
 
-sub seconds-to-d-hh-mm-ss (Int:D $total-seconds) {
-    my $dhms        = 'hh:mm:ss';
-    my $days        = 0;
-    my $hours       = 0;
-    my $minutes     = 0;
-    my $seconds     = $total-seconds;
-    my $result;
-    if $seconds >= DAY {
-        $days       = ($seconds / DAY).Int;
-        $result     = $days ~ 'd ';
-        $seconds   -= $days * DAY;
-    }
-    if $seconds >= HOUR {
-        $hours      = ($seconds / HOUR).Int;
-        $result    ~= $hours.fmt("%02d");
-        $seconds   -= $hours * HOUR;
-    }
-    else {
-        $result    ~= '00';
-    }
-    if $seconds >= MINUTE {
-        $minutes    = ($seconds / MINUTE).Int;
-        $result    ~= ':' ~ $minutes.fmt("%02d") ~ ':';
-        $seconds   -= $minutes * MINUTE;
-    }
-    else {
-        $result    ~= ':00:';
-    }
-    $seconds        = 0 if $seconds < 0;
-    $result        ~= $seconds.fmt("%02d");
-    return $result;
-}
+#seconds-to-y-d-hh-mm-ss (Int:D $total-seconds)
+#sub seconds-to-d-hh-mm-ss (Int:D $total-seconds) {
+#    my $dhms        = 'hh:mm:ss';
+#    my $days        = 0;
+#    my $hours       = 0;
+#    my $minutes     = 0;
+#    my $seconds     = $total-seconds;
+#    my $result;
+#    if $seconds >= DAY {
+#        $days       = ($seconds / DAY).Int;
+#        $result     = $days ~ 'd ';
+#        $seconds   -= $days * DAY;
+#    }
+#    if $seconds >= HOUR {
+#        $hours      = ($seconds / HOUR).Int;
+#        $result    ~= $hours.fmt("%02d");
+#        $seconds   -= $hours * HOUR;
+#    }
+#    else {
+#        $result    ~= '00';
+#    }
+#    if $seconds >= MINUTE {
+#        $minutes    = ($seconds / MINUTE).Int;
+#        $result    ~= ':' ~ $minutes.fmt("%02d") ~ ':';
+#        $seconds   -= $minutes * MINUTE;
+#    }
+#    else {
+#        $result    ~= ':00:';
+#    }
+#    $seconds        = 0 if $seconds < 0;
+#    $result        ~= $seconds.fmt("%02d");
+#    return $result;
+#}
 
 class ISP-Sessions-statistics {
 
@@ -102,10 +107,20 @@ class ISP-Sessions-statistics {
 }
 
 class Reporter does ISP::Server::Reporter {
-
     has %!statistics;
-
     has $.client-name;
+
+    method process-headings () {
+        $!grid.add-heading: :cell(Our::Grid::Cell.new: :text('Session'),                    :justification<center>);
+        $!grid.add-heading: :cell(Our::Grid::Cell.new: :text("Active \x[029D6]"),           :justification<right>);
+        $!grid.add-heading: :cell(Our::Grid::Cell.new: :text('Comm'),                       :justification<center>);
+        $!grid.add-heading: :cell(Our::Grid::Cell.new: :text('Type'),                       :justification<center>);
+        $!grid.add-heading: :cell(Our::Grid::Cell.new: :text('Platform'),                   :justification<center>);
+        $!grid.add-heading: :cell(Our::Grid::Cell.new: :text('State'),                      :justification<right>);
+        $!grid.add-heading: :cell(Our::Grid::Cell.new: :text("Bytes Sent +\x[0394]"),       :justification<center>);
+        $!grid.add-heading: :cell(Our::Grid::Cell.new: :text("Bytes Received +\x[0394]"),   :justification<center>);
+        $!grid.add-heading: :cell(Our::Grid::Cell.new: :text('Client'),                     :justification<right>);
+    }
 
     method process-rows ($sessions) {
         my Int      $SESSION_ID;                            # 872694
@@ -130,7 +145,6 @@ class Reporter does ISP::Server::Reporter {
         my Str      $VERB_STATE;                            # Sent
         my Str      $FAIL_OVER_MODE;                        # No
 
-        my $row;
         for $sessions.list -> $session {
             $CLIENT_NAME        = Nil;  $CLIENT_NAME        = $session{'CLIENT_NAME'}.Str       if $session{'CLIENT_NAME'};
             if self.client-name {
@@ -160,64 +174,54 @@ class Reporter does ISP::Server::Reporter {
             %!statistics{$SESSION_ID}                       = ISP-Sessions-statistics.new   unless %!statistics{$SESSION_ID}:exists;
             %!statistics{$SESSION_ID}.bytes-sent(:$BYTES_SENT);
             %!statistics{$SESSION_ID}.bytes-received(:$BYTES_RECEIVED);
-            $row                = Array.new;
-            $row.push:          $SESSION_ID;
+
+            $!grid.add-cell:    $SESSION_ID;
             my $active          = '';
             if $START_TIME {
                 my $current-dt  = DateTime.new(now, :timezone(self.seconds-offset-UTC));
-                $active         = seconds-to-d-hh-mm-ss(($current-dt.local - $START_TIME).Int);
+                $active         = seconds-to-y-d-hh-mm-ss(($current-dt.local - $START_TIME).Int);
             }
-            $row.push:          $active;
-            $row.push:          $COMMMETHOD;
-            $row.push:          $SESSION_TYPE;
-            $row.push:          $CLIENT_PLATFORM;
+            $!grid.add-cell:          $active;
+            $!grid.add-cell:          $COMMMETHOD;
+            $!grid.add-cell:          $SESSION_TYPE;
+            $!grid.add-cell:          $CLIENT_PLATFORM;
             if $WAIT_SECONDS && $WAIT_SECONDS > 10 {
-                $row.push:      '[' ~ seconds-to-d-hh-mm-ss($WAIT_SECONDS) ~ '] ' ~ $STATE.fmt("%6s");
+                $!grid.add-cell:      '[' ~ seconds-to-y-d-hh-mm-ss($WAIT_SECONDS) ~ '] ' ~ $STATE.fmt("%6s");
             }
             else {
-                $row.push:      $STATE;
+                $!grid.add-cell:      $STATE;
             }
             if %!statistics{$SESSION_ID}.bytes-sent-delta {
-                $row.push:      sprintf("%8s%11s",
-                                        bytes-to-unit(%!statistics{$SESSION_ID}.bytes-sent),
-                                        "+" ~ bytes-to-unit(%!statistics{$SESSION_ID}.bytes-sent-delta),
+                $!grid.add-cell:      sprintf("%8s%11s",
+                                        bytes-to-bytes-unit(%!statistics{$SESSION_ID}.bytes-sent),
+                                        "+" ~ bytes-to-bytes-unit(%!statistics{$SESSION_ID}.bytes-sent-delta),
                                 );
             }
             else {
-                $row.push:      sprintf("%8s%11s",
-                                        bytes-to-unit(%!statistics{$SESSION_ID}.bytes-sent),
+                $!grid.add-cell:      sprintf("%8s%11s",
+                                        bytes-to-bytes-unit(%!statistics{$SESSION_ID}.bytes-sent),
                                         ' ',
                                 );
             }
             if %!statistics{$SESSION_ID}.bytes-received-delta {
-                $row.push:      sprintf("%8s%11s",
-                                        bytes-to-unit(%!statistics{$SESSION_ID}.bytes-received),
-                                        "+" ~ bytes-to-unit(%!statistics{$SESSION_ID}.bytes-received-delta),
+                $!grid.add-cell:      sprintf("%8s%11s",
+                                        bytes-to-bytes-unit(%!statistics{$SESSION_ID}.bytes-received),
+                                        "+" ~ bytes-to-bytes-unit(%!statistics{$SESSION_ID}.bytes-received-delta),
                                 );
             }
             else {
-                $row.push:      sprintf("%8s%11s",
-                                        bytes-to-unit(%!statistics{$SESSION_ID}.bytes-received),
+                $!grid.add-cell:      sprintf("%8s%11s",
+                                        bytes-to-bytes-unit(%!statistics{$SESSION_ID}.bytes-received),
                                         ' ',
                                 );
             }
             my $record          =       $CLIENT_NAME;
             $record            ~=       '@FO'   if $FAIL_OVER_MODE eq 'Yes';
-            $row.push:          $record;
-            self.table.add-row: $row;
+            $!grid.add-cell:          $record;
+            $!grid.current-row++;
         }
     }
 }
-
-enum UI (
-#   ALIGNEDTXT  =>  'Reporter::Aligned::Text',
-#   BORDERTXT   =>  'Reporter::Prettier::Table',
-    BORDERTXT   =>  'ISP::Server::Reporter',
-#   CURSES      =>  'Reporter::Curses',
-#   CSV         =>  'Reporter::CSV',
-#   GRAPHICAL   =>  'Reporter::Graphical',
-    NAVTXT      =>  'Reporter::Term::TablePrint',
-);
 
 sub MAIN (
     Str:D   :$isp-server!,                                  #= ISP server name
@@ -230,7 +234,20 @@ sub MAIN (
     Bool    :$nodes-only,                                   #= NODEs only
     Bool    :$servers-only,                                 #= Servers only
     Bool    :$cache,                                        #= Read from cache
-    UI      :$ui                            = BORDERTXT,    #= User interface
+    Str     :$sort-columns,
+    Bool    :$csv,                                                  #= dump CSV to STDOUT
+    Bool    :$gui,                                                  #= Graphical User Interface
+    Bool    :$html,                                                 #= dump HTML to STDOUT
+    Bool    :$json,                                                 #= dump JSON to STDOUT
+#   Grid-Email-Formats  :$mail-body-format,                         #= email body format
+#                       :$mail-body-format,                         #= email body format
+#                       :$mail-from,                                #= email 'From:' addressee
+#                       :@mail-to,                                  #= accumulate email 'To:' addressees
+#                       :@mail-cc                       = (),       #= accumulate email 'Cc:' addressees
+#                       :@mail-bcc                      = (),       #= accumulate email 'Bcc:' addressees
+    Bool    :$text,                                                 #= TEXT print
+    Bool    :$tui,                                                  #= Terminal User Interface
+    Bool    :$xml,                                                  #= dump XML to STDOUT
 ) {
     my @command     = ['SELECT', '*', 'FROM', 'SESSIONS'];
     if $nodes-only {
@@ -239,18 +256,6 @@ sub MAIN (
     elsif $servers-only {
         @command.append: 'WHERE', 'SESSION_TYPE=' ~ "'" ~ 'Server' ~ "'";
     }
-    my @fields;
-    @fields.push:   ISP::Server::Reporter::Field.new(:name('Session'),                  :alignment('c'));
-    @fields.push:   ISP::Server::Reporter::Field.new(:name("Active \x[029D6]"),         :alignment('r'));
-    @fields.push:   ISP::Server::Reporter::Field.new(:name('Comm'),                     :alignment('c'));
-    @fields.push:   ISP::Server::Reporter::Field.new(:name('Type'),                     :alignment('c'));
-    @fields.push:   ISP::Server::Reporter::Field.new(:name('Platform'),                 :alignment('c'));
-    @fields.push:   ISP::Server::Reporter::Field.new(:name('State'),                    :alignment('r'));
-    @fields.push:   ISP::Server::Reporter::Field.new(:name("Bytes Sent +\x[0394]"),     :alignment('c'));
-    @fields.push:   ISP::Server::Reporter::Field.new(:name("Bytes Received +\x[0394]"), :alignment('c'));
-    @fields.push:   ISP::Server::Reporter::Field.new(:name('Client'),                   :alignment('r'));
-
-
 
 #   my $reporter    = ::($ui.value).new(
     my $reporter    = Reporter.new(
@@ -262,10 +267,21 @@ sub MAIN (
                                     :$interval,
                                     :title('IBM Spectrum Protect: ' ~ $isp-server ~ ' Sessions'),
                                     :@command,
-                                    :@fields,
                                     :$client-name,
-                                    :sort-by('Client'),
                                     :$cache,
+                                    :@sort-columns,
+                                    :$csv,
+                                    :$gui,
+                                    :$html,
+                                    :$json,
+#                                   :$mail-body-format($mail-body-format ~~ Array ?? $mail-body-format[0] !! $mail-body-format),
+#                                   :mail-from($mail-from ~~ Array ?? $mail-from[0] !! $mail-from),
+#                                   :@mail-to,
+#                                   :@mail-cc,
+#                                   :@mail-bcc,
+                                    :$text,
+                                    :$tui,
+                                    :$xml,
                                   );
     $reporter.loop;
 }
