@@ -38,15 +38,15 @@ class Reporter does ISP::Server::Reporter {
     has $.client-name;
 
     method process-headings () {
-        $!grid.add-heading: :cell(Our::Grid::Cell.new: :text('Session'),                    :justification<center>);
+        $!grid.add-heading: :cell(Our::Grid::Cell.new: :text('Session'),                    :justification<right>);
         $!grid.add-heading: :cell(Our::Grid::Cell.new: :text("Active \x[029D6]"),           :justification<right>);
-        $!grid.add-heading: :cell(Our::Grid::Cell.new: :text('Comm'),                       :justification<center>);
-        $!grid.add-heading: :cell(Our::Grid::Cell.new: :text('Type'),                       :justification<center>);
-        $!grid.add-heading: :cell(Our::Grid::Cell.new: :text('Platform'),                   :justification<center>);
-        $!grid.add-heading: :cell(Our::Grid::Cell.new: :text('State'),                      :justification<right>);
-        $!grid.add-heading: :cell(Our::Grid::Cell.new: :text("Bytes Sent +\x[0394]"),       :justification<center>);
-        $!grid.add-heading: :cell(Our::Grid::Cell.new: :text("Bytes Received +\x[0394]"),   :justification<center>);
-        $!grid.add-heading: :cell(Our::Grid::Cell.new: :text('Client'),                     :justification<right>);
+        $!grid.add-heading: :cell(Our::Grid::Cell.new: :text('Comm'),                       :justification<left>);
+        $!grid.add-heading: :cell(Our::Grid::Cell.new: :text('Type'),                       :justification<left>);
+        $!grid.add-heading: :cell(Our::Grid::Cell.new: :text('Platform'),                   :justification<left>);
+        $!grid.add-heading: :cell(Our::Grid::Cell.new: :text('State'),                      :justification<left>);
+        $!grid.add-heading: :cell(Our::Grid::Cell.new: :text("Bytes Sent +\x[0394]"),       :justification<left>);
+        $!grid.add-heading: :cell(Our::Grid::Cell.new: :text("Bytes Received +\x[0394]"),   :justification<left>);
+        $!grid.add-heading: :cell(Our::Grid::Cell.new: :text('Client'),                     :justification<left>);
     }
 
     method process-rows ($sessions) {
@@ -102,37 +102,37 @@ class Reporter does ISP::Server::Reporter {
             %!statistics{$SESSION_ID}.bytes-sent(:$BYTES_SENT);
             %!statistics{$SESSION_ID}.bytes-received(:$BYTES_RECEIVED);
 
-            $!grid.add-cell:    $SESSION_ID;
+            $!grid.add-cell:    $SESSION_ID,            :justification<right>;
             my $active          = '';
             if $START_TIME {
                 my $current-dt  = DateTime.new(now, :timezone(self.seconds-offset-UTC));
                 $active         = seconds-to-y-d-hh-mm-ss(($current-dt.local - $START_TIME).Int);
             }
-            $!grid.add-cell:        $active;
-            $!grid.add-cell:        $COMMMETHOD;
-            $!grid.add-cell:        $SESSION_TYPE;
-            $!grid.add-cell:        $CLIENT_PLATFORM;
+            $!grid.add-cell:        $active,            :justification<right>;
+            $!grid.add-cell:        $COMMMETHOD,        :justification<left>;
+            $!grid.add-cell:        $SESSION_TYPE,      :justification<left>;
+            $!grid.add-cell:        $CLIENT_PLATFORM,   :justification<left>;
             if $WAIT_SECONDS && $WAIT_SECONDS > 10 {
-                $!grid.add-cell:    '[' ~ seconds-to-y-d-hh-mm-ss($WAIT_SECONDS) ~ '] ' ~ $STATE.fmt("%6s");
+                $!grid.add-cell:    '[' ~ seconds-to-y-d-hh-mm-ss($WAIT_SECONDS) ~ '] ' ~ $STATE.fmt("%6s"), :justification<left>;
             }
             else {
-                $!grid.add-cell:    $STATE;
+                $!grid.add-cell:    $STATE,             :justification<left>;
             }
             if %!statistics{$SESSION_ID}.bytes-sent-delta {
-                $!grid.add-cell:    sprintf("%8s%11s", bytes-to-bytes-unit(%!statistics{$SESSION_ID}.bytes-sent), "+" ~ bytes-to-bytes-unit(%!statistics{$SESSION_ID}.bytes-sent-delta));
+                $!grid.add-cell:    sprintf("%8s%11s", bytes-to-bytes-unit(%!statistics{$SESSION_ID}.bytes-sent), "+" ~ bytes-to-bytes-unit(%!statistics{$SESSION_ID}.bytes-sent-delta)), :justification<left>;
             }
             else {
-                $!grid.add-cell:    sprintf("%8s%11s", bytes-to-bytes-unit(%!statistics{$SESSION_ID}.bytes-sent), ' ');
+                $!grid.add-cell:    sprintf("%8s%11s", bytes-to-bytes-unit(%!statistics{$SESSION_ID}.bytes-sent), ' '), :justification<left>;
             }
             if %!statistics{$SESSION_ID}.bytes-received-delta {
-                $!grid.add-cell:    sprintf("%8s%11s", bytes-to-bytes-unit(%!statistics{$SESSION_ID}.bytes-received), "+" ~ bytes-to-bytes-unit(%!statistics{$SESSION_ID}.bytes-received-delta));
+                $!grid.add-cell:    sprintf("%8s%11s", bytes-to-bytes-unit(%!statistics{$SESSION_ID}.bytes-received), "+" ~ bytes-to-bytes-unit(%!statistics{$SESSION_ID}.bytes-received-delta)), :justification<left>;
             }
             else {
-                $!grid.add-cell:    sprintf("%8s%11s", bytes-to-bytes-unit(%!statistics{$SESSION_ID}.bytes-received), ' ');
+                $!grid.add-cell:    sprintf("%8s%11s", bytes-to-bytes-unit(%!statistics{$SESSION_ID}.bytes-received), ' '), :justification<left>;
             }
             my $record          =       $CLIENT_NAME;
             $record            ~=       '@FO'   if $FAIL_OVER_MODE eq 'Yes';
-            $!grid.add-cell:        $record;
+            $!grid.add-cell:        $record,            :justification<left>;
             $!grid.current-row++;
         }
     }
