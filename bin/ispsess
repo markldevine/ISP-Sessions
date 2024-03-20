@@ -128,7 +128,6 @@ class Reporter does ISP::Server::Reporter {
                 @fragments.push:    Our::Grid::Cell::Fragment.new(:text($frag1), :spacebefore(8 - $frag1.chars), :1spaceafter, :trim-input(False));
                 @fragments.push:    Our::Grid::Cell::Fragment.new(:text($frag2), :spacebefore(10 - $frag2.chars), :trim-input(False));
 ddt @fragments;
-die;
                 $!grid.add-cell:    :cell(Our::Grid::Cell.new(:@fragments));
             }
             else {
