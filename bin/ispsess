@@ -1,8 +1,5 @@
 #!/usr/bin/env raku
 
-use lib '/home/mdevine/github.com/raku-Our-Grid/lib';
-use Data::Dump::Tree;
-
 use ISP::Server::Reporter;
 use Our::Grid;
 use Our::Utilities;
@@ -125,25 +122,27 @@ class Reporter does ISP::Server::Reporter {
                 my @fragments;
                 my $frag1           = bytes-to-bytes-unit(%!statistics{$SESSION_ID}.bytes-sent); 
                 my $frag2           = '+' ~ bytes-to-bytes-unit(%!statistics{$SESSION_ID}.bytes-sent-delta);
-                @fragments.push:    Our::Grid::Cell::Fragment.new(:text($frag1), :spacebefore(8 - $frag1.chars), :1spaceafter, :trim-input(False));
-                @fragments.push:    Our::Grid::Cell::Fragment.new(:text($frag2), :spacebefore(10 - $frag2.chars), :trim-input(False));
-ddt @fragments;
+                @fragments.push:    Our::Grid::Cell::Fragment.new(:text($frag1), :spacebefore(8 - $frag1.chars), :1spaceafter);
+                @fragments.push:    Our::Grid::Cell::Fragment.new(:text($frag2), :spacebefore(10 - $frag2.chars));
                 $!grid.add-cell:    :cell(Our::Grid::Cell.new(:@fragments));
             }
             else {
-                $!grid.add-cell:    bytes-to-bytes-unit(%!statistics{$SESSION_ID}.bytes-sent), :justification<left>;
+                my $text            = bytes-to-bytes-unit(%!statistics{$SESSION_ID}.bytes-sent);
+                my @fragments.push: Our::Grid::Cell::Fragment.new(:$text, :justification<left>, :spacebefore(8 - $text.chars));
+                $!grid.add-cell:    :cell(Our::Grid::Cell.new(:@fragments));
             }
             if %!statistics{$SESSION_ID}.bytes-received-delta {
                 my @fragments;
-                my $text            = bytes-to-bytes-unit(%!statistics{$SESSION_ID}.bytes-received);
-                my $spaceafter      = 8 - $text.chars;
-
-
-
-                $!grid.add-cell:    sprintf("%8s %11s", bytes-to-bytes-unit(%!statistics{$SESSION_ID}.bytes-received), "+" ~ bytes-to-bytes-unit(%!statistics{$SESSION_ID}.bytes-received-delta)), :justification<left>;
+                my $frag1           = bytes-to-bytes-unit(%!statistics{$SESSION_ID}.bytes-received);
+                my $frag2           = '+' ~ bytes-to-bytes-unit(%!statistics{$SESSION_ID}.bytes-received-delta);
+                @fragments.push:    Our::Grid::Cell::Fragment.new(:text($frag1), :spacebefore(8 - $frag1.chars), :1spaceafter);
+                @fragments.push:    Our::Grid::Cell::Fragment.new(:text($frag2), :spacebefore(10 - $frag2.chars));
+                $!grid.add-cell:    :cell(Our::Grid::Cell.new(:@fragments));
             }
             else {
-                $!grid.add-cell:    bytes-to-bytes-unit(%!statistics{$SESSION_ID}.bytes-received), :justification<left>;
+                my $text            = bytes-to-bytes-unit(%!statistics{$SESSION_ID}.bytes-received);
+                my @fragments.push: Our::Grid::Cell::Fragment.new(:$text, :justification<left>, :spacebefore(8 - $text.chars));
+                $!grid.add-cell:    :cell(Our::Grid::Cell.new(:@fragments));
             }
             my $record          =       $CLIENT_NAME;
             $record            ~=       '@FO'   if $FAIL_OVER_MODE eq 'Yes';
